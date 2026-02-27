@@ -1,0 +1,26 @@
+Initialize:
+
+cmake --preset default
+
+Rebuild after code changes: 
+
+cmake --build --preset default (from the complete/ directory)
+
+Run this from the complete/ directory 
+any time you make code changes 
+and want to rebuild. 
+It builds all three plugin formats 
+(Standalone, AU, VST3).
+
+Run the standalone app to test: 
+
+open cmake-build/TremoloCoursePlugin_artefacts/Debug/Standalone/Tremolo.app
+
+IntelliSense should now work -- 
+you'll get autocomplete, go-to-definition, 
+and error highlighting for all JUCE APIs 
+and your plugin code
+
+
+
+open cmake-build/TremoloCoursePlugin_artefacts/Debug/Standalone/Tremolo.app

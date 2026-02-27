@@ -62,19 +62,19 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 
 # Adds a plugin target.
-set(TREMOLO_PLUGIN_NAME "TODO: set your plugin name")
+set(TREMOLO_PLUGIN_NAME "Tremolo")
 juce_add_plugin(
   TremoloCoursePlugin
   PRODUCT_NAME
     ${TREMOLO_PLUGIN_NAME}
   VERSION
-    # TODO: add version
+    0.0.0
   COMPANY_NAME
-    # TODO: add company
+    "WolfSound"
   PLUGIN_MANUFACTURER_CODE
-    # TODO: add plugin manufacturer code
+    Wfsd
   PLUGIN_CODE
-    # TODO: add plugin code
+    Trcp
   FORMATS
     Standalone
     AU
@@ -107,7 +107,6 @@ juce_add_binary_data(tremolo_plugin_assets
   SOURCES
     assets/Background.png
     assets/Logo.png
-    # TODO: Add custom font files
 )
 
 add_library(tremolo::tremolo_plugin_assets ALIAS tremolo_plugin_assets)
