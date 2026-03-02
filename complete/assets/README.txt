@@ -1,4 +1,4 @@
-This is a VST3 audio plugin named Tremolo developed by Jan Wilczek.
+This is a VST3 audio plugin named Pandoras Box developed by FernShy.
 
 To install it on your system:
 
@@ -18,4 +18,3 @@ To install it on your system:
 2. Reload your DAW.
 
 All rights reserved.
-

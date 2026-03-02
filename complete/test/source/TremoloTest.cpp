@@ -1,11 +1,11 @@
 #include "TestUtils.h"
 #include <gtest/gtest.h>
-#include <tremolo_plugin/tremolo_plugin.h>
+#include <pandoras_box_plugin/pandoras_box_plugin.h>
 
 #include <wolfsound/file/wolfsound_WavFileWriter.hpp>
 #include <wolfsound/dsp/wolfsound_testSignals.hpp>
 
-namespace tremolo {
+namespace pandoras_box {
 namespace {
 void extractLfo(Tremolo& tremolo, juce::AudioBuffer<float>& bufferToUse) {
   juce::dsp::AudioBlock<float> block{bufferToUse};
@@ -122,4 +122,4 @@ TEST(Tremolo, SamplewiseAndChannelwiseProcessingYieldIdenticalResults) {
                 channelwiseBuffer.getSample(0, i), 1e-5f);
   }
 }
-}  // namespace tremolo
+}  // namespace pandoras_box

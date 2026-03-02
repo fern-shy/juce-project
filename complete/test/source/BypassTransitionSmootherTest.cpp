@@ -1,7 +1,7 @@
-#include <tremolo_plugin/tremolo_plugin.h>
+#include <pandoras_box_plugin/pandoras_box_plugin.h>
 #include <gtest/gtest.h>
 
-namespace tremolo {
+namespace pandoras_box {
 class BypassTransitionSmootherTest : public testing::Test {
 protected:
   static constexpr auto dryValue = 0;
@@ -200,4 +200,4 @@ TEST_F(BypassTransitionSmootherTest, ForcingBypassOffSkipsTransition) {
     EXPECT_FLOAT_EQ(wetValue, sample);
   }
 }
-}  // namespace tremolo
+}  // namespace pandoras_box

@@ -15,7 +15,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "" FORCE)
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "" FORCE)
 
 # Sets a few variables, like PROJECT_NAME.
-project(JucePluginDevelopmentCourseTremoloPlugin)
+project(FernShyPandorasBoxPlugin)
 
 # Set the C++ standard only if this project is standalone;
 # otherwise, let clients decide.
@@ -62,19 +62,19 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 
 # Adds a plugin target.
-set(TREMOLO_PLUGIN_NAME "Tremolo")
+set(FERNSHY_PANDORAS_BOX_PLUGIN_NAME "Pandoras Box")
 juce_add_plugin(
-  TremoloCoursePlugin
+  FernShyPandorasBoxPlugin
   PRODUCT_NAME
-    ${TREMOLO_PLUGIN_NAME}
+    ${FERNSHY_PANDORAS_BOX_PLUGIN_NAME}
   VERSION
     0.0.0 # 0 forces AU hosts to always refresh
   COMPANY_NAME
-    "WolfSound"
+    "FernShy"
   PLUGIN_MANUFACTURER_CODE
-    Wfsd
+    Fshy
   PLUGIN_CODE
-    Trcp
+    Pbox
   FORMATS
     Standalone
     AU
@@ -88,22 +88,22 @@ juce_add_plugin(
   VST3_AUTO_MANIFEST
     FALSE
   COPY_PLUGIN_AFTER_BUILD
-    FALSE
+    TRUE
 )
 
 # Configures the JUCE sources included in the plugin target.
-target_compile_definitions(TremoloCoursePlugin
+target_compile_definitions(FernShyPandorasBoxPlugin
   PRIVATE
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
-juce_add_binary_data(tremolo_plugin_assets
+juce_add_binary_data(pandoras_box_plugin_assets
   HEADER_NAME
-    "TremoloPluginAssets.h"
+    "PandorasBoxPluginAssets.h"
   NAMESPACE
-    tremolo::assets
+    pandoras_box::assets
   SOURCES
     assets/Background.png
     assets/Logo.png
@@ -111,25 +111,25 @@ juce_add_binary_data(tremolo_plugin_assets
     assets/Inter-Medium.ttf
 )
 
-add_library(tremolo::tremolo_plugin_assets ALIAS tremolo_plugin_assets)
+add_library(fernshy::pandoras_box_plugin_assets ALIAS pandoras_box_plugin_assets)
 
-juce_add_module(tremolo_plugin ALIAS_NAMESPACE tremolo)
+juce_add_module(pandoras_box_plugin ALIAS_NAMESPACE fernshy)
 
 # Additional definitions required by all users of this module.
-target_compile_definitions(tremolo_plugin
+target_compile_definitions(pandoras_box_plugin
   INTERFACE
-    TREMOLO_PLUGIN_NAME="${TREMOLO_PLUGIN_NAME}"
+    FERNSHY_PANDORAS_BOX_PLUGIN_NAME="${FERNSHY_PANDORAS_BOX_PLUGIN_NAME}"
 )
 
 # Enables strict C++ warnings.
-target_compile_options(tremolo_plugin INTERFACE "${PROJECT_WARNINGS_CXX}")
+target_compile_options(pandoras_box_plugin INTERFACE "${PROJECT_WARNINGS_CXX}")
 
-target_link_libraries(tremolo_plugin INTERFACE tremolo::tremolo_plugin_assets)
+target_link_libraries(pandoras_box_plugin INTERFACE fernshy::pandoras_box_plugin_assets)
 
 target_link_libraries(
-  TremoloCoursePlugin
+  FernShyPandorasBoxPlugin
   PRIVATE
-    tremolo::tremolo_plugin
+    fernshy::pandoras_box_plugin
   PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
@@ -137,15 +137,15 @@ target_link_libraries(
 )
 
 # Zip the .vst3 bundle with the README.txt file
-get_target_property(VST3_BUNDLE_PATH TremoloCoursePlugin_VST3 JUCE_PLUGIN_ARTEFACT_FILE)
+get_target_property(VST3_BUNDLE_PATH FernShyPandorasBoxPlugin_VST3 JUCE_PLUGIN_ARTEFACT_FILE)
 cmake_path(GET VST3_BUNDLE_PATH PARENT_PATH VST3_BUNDLE_OUTPUT_DIR)
 add_custom_command(
-  TARGET TremoloCoursePlugin_VST3
+  TARGET FernShyPandorasBoxPlugin_VST3
   POST_BUILD
   WORKING_DIRECTORY ${VST3_BUNDLE_OUTPUT_DIR}
   # For some reason, if the README.txt is in a different directory, zipping it fails, thus, we need to copy it first
   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/assets/README.txt" ${VST3_BUNDLE_OUTPUT_DIR}
-  COMMAND ${CMAKE_COMMAND} -E tar cvf "${VST3_BUNDLE_OUTPUT_DIR}/Tremolo.zip" --format=zip -- "${VST3_BUNDLE_PATH}" README.txt
+  COMMAND ${CMAKE_COMMAND} -E tar cvf "${VST3_BUNDLE_OUTPUT_DIR}/PandorasBox.zip" --format=zip -- "${VST3_BUNDLE_PATH}" README.txt
 )
 
 # In Visual Studio this command provides a nice grouping of source files in "filters".

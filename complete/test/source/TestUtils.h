@@ -1,7 +1,7 @@
 #pragma once
 #include <juce_core/juce_core.h>
 
-namespace tremolo {
+namespace pandoras_box {
 inline std::string getFileOutputPath(juce::StringRef fileName) {
   return juce::File::getSpecialLocation(
              juce::File::SpecialLocationType::currentExecutableFile)
@@ -10,4 +10,4 @@ inline std::string getFileOutputPath(juce::StringRef fileName) {
       .getFullPathName()
       .toStdString();
 }
-}  // namespace tremolo
+}  // namespace pandoras_box

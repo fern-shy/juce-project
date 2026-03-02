@@ -1,7 +1,7 @@
-#include <tremolo_plugin/tremolo_plugin.h>
+#include <pandoras_box_plugin/pandoras_box_plugin.h>
 #include <gtest/gtest.h>
 
-namespace tremolo {
+namespace pandoras_box {
 TEST(JsonSerializer, SerializeToString) {
   PluginProcessor processor;
   auto& parameters = processor.getParameterRefs();
@@ -13,7 +13,7 @@ TEST(JsonSerializer, SerializeToString) {
   const juce::String expectedOutput =
       u8R"({
   "__version__": 1,
-  "pluginName": "Tremolo",
+  "pluginName": "Pandoras Box",
   "modulationRateHz": 10.0,
   "bypassed": true,
   "modulationWaveform": "Triangle"
@@ -33,7 +33,7 @@ TEST(JsonSerializer, DeserializeFromString) {
   const juce::String savedParameters =
       u8R"({
   "__version__": 1,
-  "pluginName": "Tremolo",
+  "pluginName": "Pandoras Box",
   "modulationRateHz": 10.0,
   "bypassed": true,
   "modulationWaveform": "Triangle"
@@ -60,7 +60,7 @@ TEST(JsonSerializer, DontUpdateParametersWhenWaveformNameIsInvalid) {
   const juce::String savedParameters =
       u8R"({
   "__version__": 1,
-  "pluginName": "Tremolo",
+  "pluginName": "Pandoras Box",
   "modulationRateHz": 10.0,
   "bypassed": true,
   "modulationWaveform": "Foo"
@@ -85,4 +85,4 @@ TEST(JsonSerializer, DontUpdateParametersWhenWaveformNameIsInvalid) {
   EXPECT_FALSE(parameters.bypassed.get());
   EXPECT_EQ(0, parameters.waveform.getIndex());
 }
-}  // namespace tremolo
+}  // namespace pandoras_box

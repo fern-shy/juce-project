@@ -1,12 +1,12 @@
 #include "TestUtils.h"
-#include <tremolo_plugin/tremolo_plugin.h>
+#include <pandoras_box_plugin/pandoras_box_plugin.h>
 #include <gtest/gtest.h>
 #include <wolfsound/common/wolfsound_Frequency.hpp>
 #include <wolfsound/file/wolfsound_WavFileWriter.hpp>
 
 using namespace wolfsound::literals;
 
-namespace tremolo {
+namespace pandoras_box {
 /** This test doesn't test anything but shows that you can instantiate and use a
  * plugin processor in test */
 TEST(PluginProcessor, PlaceholderTest) {
@@ -66,4 +66,4 @@ TEST_F(BypassTransitionIsSmoothTest, ExerciseAllSegments) {
                  static_cast<size_t>(outputBuffer.getNumSamples())},
       sampleRate);
 }
-}  // namespace tremolo
+}  // namespace pandoras_box
