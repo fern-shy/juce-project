@@ -61,20 +61,20 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set_directory_properties(PROPERTIES JUCE_VST3_COPY_DIR "$ENV{LOCALAPPDATA}/Programs/Common/VST3")
 endif()
 
-# Adds a plugin target.
+##cmake fucntion created by juce-
 set(TREMOLO_PLUGIN_NAME "Tremolo")
 juce_add_plugin(
-  TremoloCoursePlugin
+  TremoloCoursePlugin ## TARGET NAME
   PRODUCT_NAME
     ${TREMOLO_PLUGIN_NAME}
   VERSION
     0.0.0 # 0 forces AU hosts to always refresh
   COMPANY_NAME
-    "WolfSound"
+    "WolfSound" #"Fern Shy"
   PLUGIN_MANUFACTURER_CODE
-    Wfsd
+    Wfsd ##Fern
   PLUGIN_CODE
-    Trcp
+    Trcp ##"Pbox"
   FORMATS
     Standalone
     AU
@@ -88,7 +88,7 @@ juce_add_plugin(
   VST3_AUTO_MANIFEST
     FALSE
   COPY_PLUGIN_AFTER_BUILD
-    FALSE
+    TRUE
 )
 
 # Configures the JUCE sources included in the plugin target.
