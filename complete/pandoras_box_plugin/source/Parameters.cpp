@@ -7,15 +7,15 @@ auto& addParameterToProcessor(juce::AudioProcessor& processor, auto parameter) {
   return result;
 }
 
-juce::AudioParameterFloat& createModulationRateParameter(
-    juce::AudioProcessor& processor) {
-  constexpr auto versionHint = 1;
+juce::AudioParameterFloat& createMacroParameter(
+    juce::AudioProcessor& processor,
+    const juce::String& id, const juce::String& name) {
+  constexpr auto versionHint = 2;
   return addParameterToProcessor(
       processor,
       std::make_unique<juce::AudioParameterFloat>(
-          juce::ParameterID{"modulation.rate", versionHint}, "Modulation rate",
-          juce::NormalisableRange<float>{0.1f, 20.f, 0.01f, 0.4f}, 5.f,
-          juce::AudioParameterFloatAttributes{}.withLabel("Hz")));
+          juce::ParameterID{id, versionHint}, name,
+          juce::NormalisableRange<float>{0.0f, 1.0f, 0.01f}, 0.5f));
 }
 
 juce::AudioParameterBool& createBypassedParameter(
@@ -26,20 +26,16 @@ juce::AudioParameterBool& createBypassedParameter(
       std::make_unique<juce::AudioParameterBool>(
           juce::ParameterID{"bypassed", versionHint}, "Bypass", false));
 }
-
-juce::AudioParameterChoice& createWaveformParameter(
-    juce::AudioProcessor& processor) {
-  constexpr auto versionHint = 1;
-  return addParameterToProcessor(
-      processor,
-      std::make_unique<juce::AudioParameterChoice>(
-          juce::ParameterID{"modulation.waveform", versionHint},
-          "Modulation waveform", juce::StringArray{"Sine", "Triangle"}, 0));
-}
 }  // namespace
 
 Parameters::Parameters(juce::AudioProcessor& processor)
-    : rate{createModulationRateParameter(processor)},
-      bypassed{createBypassedParameter(processor)},
-      waveform{createWaveformParameter(processor)} {}
+    : time{createMacroParameter(processor, "macro.time", "Time")},
+      breath{createMacroParameter(processor, "macro.breath", "Breath")},
+      order{createMacroParameter(processor, "macro.order", "Order")},
+      chaos{createMacroParameter(processor, "macro.chaos", "Chaos")},
+      space{createMacroParameter(processor, "macro.space", "Space")},
+      reflection{createMacroParameter(processor, "macro.reflection", "Reflection")},
+      fracture{createMacroParameter(processor, "macro.fracture", "Fracture")},
+      wrath{createMacroParameter(processor, "macro.wrath", "Wrath")},
+      bypassed{createBypassedParameter(processor)} {}
 }  // namespace pandoras_box

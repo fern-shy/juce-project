@@ -1,129 +1,98 @@
 namespace pandoras_box {
+
+juce::Image PluginEditor::flipHorizontal(const juce::Image& src) {
+  const int w = src.getWidth();
+  const int h = src.getHeight();
+  juce::Image flipped(src.getFormat(), w, h, true);
+  for (int y = 0; y < h; ++y)
+    for (int x = 0; x < w; ++x)
+      flipped.setPixelAt(w - 1 - x, y, src.getPixelAt(x, y));
+  return flipped;
+}
+
 PluginEditor::PluginEditor(PluginProcessor& p)
-    : AudioProcessorEditor(&p),
-      waveformAttachment{p.getParameterRefs().waveform, waveformComboBox},
-      rateAttachment{p.getParameterRefs().rate, rateSlider},
-      bypassAttachment{p.getParameterRefs().bypassed, bypassButton},
-      lfoVisualizer{
-          [&p](juce::AudioBuffer<float>& b) { p.readAllLfoSamples(b); },
-          [&p] { return p.getSampleRateThreadSafe(); },
-          [&p] { return p.getParameterRefs().bypassed.get(); }},
-      about{*this, logo,
-            JucePlugin_Manufacturer "\n" JucePlugin_Name "\n" __DATE__
-                                    "\n" __TIME__
-                                    "\nv" JucePlugin_VersionString} {
+    : AudioProcessorEditor(p),
+      processorRef(p),
+      bypassAttachment{p.getParameterRefs().bypassed, bypassButton} {
+  setSize(400, 400);
+
   background.setImage(juce::ImageCache::getFromMemory(
-      assets::Background_png, assets::Background_pngSize));
+      assets::_3_02_26_png, assets::_3_02_26_pngSize));
+  background.setInterceptsMouseClicks(false, false);
   addAndMakeVisible(background);
 
-  logo.setImage(
-      juce::ImageCache::getFromMemory(assets::Logo_png, assets::Logo_pngSize));
-  addAndMakeVisible(logo);
+  auto openImg = juce::ImageCache::getFromMemory(
+      assets::_3_02_26_open_png, assets::_3_02_26_open_pngSize);
+  auto closedImg = juce::ImageCache::getFromMemory(
+      assets::_3_02_26_close_png, assets::_3_02_26_close_pngSize);
 
-  const auto sideFontColor = juce::Colour{0xFF6EA0C7};
+  auto openMirror = flipHorizontal(openImg);
+  auto closedMirror = flipHorizontal(closedImg);
 
-  waveformLabel.setJustificationType(juce::Justification::left);
-  waveformLabel.setMinimumHorizontalScale(1.f);
-  waveformLabel.setFont(lookAndFeel.getSideLabelsFont());
-  waveformLabel.setColour(juce::Label::textColourId, sideFontColor);
-  addAndMakeVisible(waveformLabel);
+  // Left eye: randomize parameters
+  paramsEye.setImages(false, true, true,
+                      openImg, 1.0f, {},
+                      openImg, 0.85f, {},
+                      closedImg, 1.0f, {});
+  paramsEye.onClick = [this]() { processorRef.randomizeParams(); };
+  addAndMakeVisible(paramsEye);
 
-  waveformComboBox.addItemList(p.getParameterRefs().waveform.choices, 1);
-  waveformAttachment.sendInitialUpdate();
-  addAndMakeVisible(waveformComboBox);
+  // Center eye: randomize both (larger, uses same art scaled up for now)
+  bothEye.setImages(false, true, true,
+                    openImg, 1.0f, {},
+                    openImg, 0.85f, {},
+                    closedImg, 1.0f, {});
+  bothEye.onClick = [this]() { processorRef.randomizeBoth(); };
+  addAndMakeVisible(bothEye);
 
-  rateSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-  rateSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::NoTextBox,
-                             true, 0, 0);
-  rateSlider.setTextValueSuffix(" Hz");
-  rateSlider.setPopupDisplayEnabled(true, true, this);
-  addAndMakeVisible(rateSlider);
+  // Right eye: randomize order (mirrored)
+  orderEye.setImages(false, true, true,
+                     openMirror, 1.0f, {},
+                     openMirror, 0.85f, {},
+                     closedMirror, 1.0f, {});
+  orderEye.onClick = [this]() { processorRef.randomizeOrder(); };
+  addAndMakeVisible(orderEye);
 
-  rateLabel.setJustificationType(juce::Justification::centred);
-  rateLabel.setInterceptsMouseClicks(false, false);
-  rateLabel.setFont(lookAndFeel.getRateLabelFont());
-  addAndMakeVisible(rateLabel);
-
-  bypassLabel.setJustificationType(juce::Justification::left);
-  bypassLabel.setMinimumHorizontalScale(1.f);
-  bypassLabel.setFont(lookAndFeel.getSideLabelsFont());
-  bypassLabel.setColour(juce::Label::textColourId, sideFontColor);
-  addAndMakeVisible(bypassLabel);
-
+  bypassButton.setColour(juce::ToggleButton::textColourId,
+                          juce::Colour{0xFF5A2020});
+  bypassButton.setColour(juce::ToggleButton::tickColourId,
+                          juce::Colour{0xFF8B0000});
+  bypassButton.setColour(juce::ToggleButton::tickDisabledColourId,
+                          juce::Colour{0xFF5A2020});
   bypassButton.onClick = [this]() {
-    bypassButton.setButtonText(bypassButton.getToggleState() ? "Bypassed"
-                                                             : "Off");
+    bypassButton.setButtonText(bypassButton.getToggleState() ? "BYPASSED"
+                                                             : "BYPASS");
   };
   bypassButton.onClick();
   addAndMakeVisible(bypassButton);
-
-  lfoVisualizer.setCurveWidth(2.f);
-  lfoVisualizer.setCurveColor(
-      lookAndFeel.getColor(CustomLookAndFeel::Colors::orange));
-  lfoVisualizer.setBackgroundColor(juce::Colours::transparentBlack);
-  addAndMakeVisible(lfoVisualizer);
-
-  setLookAndFeel(&lookAndFeel);
-
-  // Make sure that before the constructor has finished, you've set the
-  // editor's size to whatever you need it to be.
-  setSize(540, 270);
 }
 
-PluginEditor::~PluginEditor() {
-  setLookAndFeel(nullptr);
-}
+PluginEditor::~PluginEditor() = default;
 
 void PluginEditor::resized() {
   const auto bounds = getLocalBounds();
-
   background.setBounds(bounds);
 
-  logo.setBounds({16, 16, 105, 24});
+  const int smallEye = 120;
+  const int bigEye = 160;
+  const int eyeY = bounds.getCentreY() - bigEye / 2;
+  const int totalWidth = smallEye + 16 + bigEye + 16 + smallEye;
+  const int startX = bounds.getCentreX() - totalWidth / 2;
 
-  auto lfoVisualizerBounds = bounds.reduced(18, 27);
-  lfoVisualizerBounds.removeFromTop(122);
-  lfoVisualizer.setBounds(lfoVisualizerBounds);
+  // Left eye (params) — vertically centered with center eye
+  paramsEye.setBounds(startX, eyeY + (bigEye - smallEye) / 2,
+                      smallEye, smallEye);
 
-  auto rateSliderBounds = bounds.reduced(230, 40);
-  rateSliderBounds.removeFromBottom(110);
-  rateSlider.setBounds(rateSliderBounds);
-  rateLabel.setBounds(rateSliderBounds);
+  // Center eye (both) — larger
+  bothEye.setBounds(startX + smallEye + 16, eyeY, bigEye, bigEye);
 
-  auto waveformComboBoxBounds = bounds;
-  waveformComboBoxBounds.removeFromTop(66);
-  waveformComboBoxBounds.removeFromRight(392);
-  waveformComboBoxBounds.removeFromBottom(176);
-  waveformComboBoxBounds.removeFromLeft(16);
-  waveformComboBox.setBounds(waveformComboBoxBounds);
+  // Right eye (order) — mirrored
+  orderEye.setBounds(startX + smallEye + 16 + bigEye + 16,
+                     eyeY + (bigEye - smallEye) / 2,
+                     smallEye, smallEye);
 
-  auto waveformLabelBounds = bounds;
-  waveformLabelBounds.removeFromTop(48);
-
-  // we make more space here than in Figma to avoid ellipsis insertion
-  waveformLabelBounds.removeFromRight(461);
-
-  waveformLabelBounds.removeFromBottom(206);
-  waveformLabelBounds.removeFromLeft(20);
-
-  waveformLabel.setBounds(waveformLabelBounds);
-
-  auto bypassButtonBounds = bounds;
-  bypassButtonBounds.removeFromTop(66);
-  bypassButtonBounds.removeFromRight(16);
-  bypassButtonBounds.removeFromBottom(176);
-  bypassButtonBounds.removeFromLeft(392);
-  bypassButton.setBounds(bypassButtonBounds);
-
-  auto bypassLabelBounds = bounds;
-  bypassLabelBounds.removeFromTop(48);
-
-  // we make more space here than in Figma to avoid ellipsis insertion
-  bypassLabelBounds.removeFromRight(104);
-
-  bypassLabelBounds.removeFromBottom(206);
-  bypassLabelBounds.removeFromLeft(396);
-
-  bypassLabel.setBounds(bypassLabelBounds);
+  // Bypass bottom-right
+  bypassButton.setBounds(bounds.getWidth() - 100, bounds.getHeight() - 30,
+                          90, 24);
 }
 }  // namespace pandoras_box

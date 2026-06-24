@@ -36,15 +36,15 @@ public:
   [[nodiscard]] Parameters& getParameterRefs() noexcept;
   juce::AudioProcessorParameter* getBypassParameter() const noexcept override;
 
-  void readAllLfoSamples(juce::AudioBuffer<float>& bufferToFill);
+  void randomizeParams();
+  void randomizeOrder();
+  void randomizeBoth();
 
-  /** @brief Retrieves the most recent sample rate the processor was given
-   * in a thread-safe manner */
   double getSampleRateThreadSafe() const noexcept;
 
 private:
   Parameters parameters{*this};
-  Tremolo tremolo;
+  EffectChain effectChain;
   BypassTransitionSmoother bypassTransitionSmoother;
   std::atomic<double> currentSampleRate{0.};
 

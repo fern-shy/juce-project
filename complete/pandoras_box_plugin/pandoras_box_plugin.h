@@ -36,6 +36,7 @@ END_JUCE_MODULE_DECLARATION
 #include <cmath>
 #include <deque>
 #include <span>
+#include <random>
 
 #include "include/PandorasBox/detail/StridedQueue.h"
 
@@ -44,8 +45,22 @@ END_JUCE_MODULE_DECLARATION
 #include "include/PandorasBox/JsonSerializer.h"
 #include "include/PandorasBox/LfoVisualizer.h"
 #include "include/PandorasBox/SampleFifo.h"
-#include "include/PandorasBox/Tremolo.h"
 #include "include/PandorasBox/BypassTransitionSmoother.h"
+
+#include "include/PandorasBox/effects/BitCrusher.h"
+#include "include/PandorasBox/effects/ChorusEffect.h"
+#include "include/PandorasBox/effects/CombFilter.h"
+#include "include/PandorasBox/effects/CompressorEffect.h"
+#include "include/PandorasBox/effects/DelayEffect.h"
+#include "include/PandorasBox/effects/Distortion.h"
+#include "include/PandorasBox/effects/FilterEffect.h"
+#include "include/PandorasBox/effects/PitchShifter.h"
+#include "include/PandorasBox/effects/ReverbEffect.h"
+#include "include/PandorasBox/effects/RingModulator.h"
+#include "include/PandorasBox/effects/StereoWidener.h"
+#include "include/PandorasBox/effects/WaveFolder.h"
+#include "include/PandorasBox/EffectChain.h"
+
 #include "include/PandorasBox/PluginProcessor.h"
 #include "include/PandorasBox/MessageOnClick.h"
 #include "include/PandorasBox/PluginEditor.h"

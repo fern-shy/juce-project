@@ -9,25 +9,21 @@ public:
   void resized() override;
 
 private:
+  PluginProcessor& processorRef;
+
   juce::ImageComponent background;
-  juce::ImageComponent logo;
 
-  juce::Label waveformLabel{"waveform label", "WAVEFORM"};
-  juce::ComboBox waveformComboBox;
-  juce::ComboBoxParameterAttachment waveformAttachment;
+  // Left eye: randomize parameters
+  juce::ImageButton paramsEye;
+  // Center eye: randomize both (placeholder until custom art)
+  juce::ImageButton bothEye;
+  // Right eye: randomize order (mirrored)
+  juce::ImageButton orderEye;
 
-  juce::Label rateLabel{"rate label", "RATE"};
-  juce::Slider rateSlider;
-  juce::SliderParameterAttachment rateAttachment;
-
-  juce::Label bypassLabel{"bypass label", "BYPASS"};
-  juce::ToggleButton bypassButton{"BYPASSED"};
+  juce::ToggleButton bypassButton{"BYPASS"};
   juce::ButtonParameterAttachment bypassAttachment;
 
-  LfoVisualizer lfoVisualizer;
-  MessageOnClick about;
-
-  CustomLookAndFeel lookAndFeel;
+  static juce::Image flipHorizontal(const juce::Image& src);
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginEditor)
 };

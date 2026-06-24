@@ -10,12 +10,13 @@ public:
     chorus.reset();
   }
 
-  void setParameters(float rate, float depth, float mixLevel) {
-    chorus.setRate(juce::jlimit(0.1f, 5.0f, rate));
+  void setParameters(float rate, float depth, float mixLevel,
+                     float centreDelay = 7.0f, float fb = -0.2f) {
+    chorus.setRate(juce::jlimit(0.1f, 7.0f, rate));
     chorus.setDepth(juce::jlimit(0.0f, 1.0f, depth));
     chorus.setMix(juce::jlimit(0.0f, 1.0f, mixLevel));
-    chorus.setCentreDelay(7.0f);
-    chorus.setFeedback(-0.2f);
+    chorus.setCentreDelay(juce::jlimit(1.0f, 20.0f, centreDelay));
+    chorus.setFeedback(juce::jlimit(-0.95f, 0.95f, fb));
   }
 
   void process(juce::AudioBuffer<float>& buffer) {

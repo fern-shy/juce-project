@@ -105,10 +105,11 @@ juce_add_binary_data(pandoras_box_plugin_assets
   NAMESPACE
     pandoras_box::assets
   SOURCES
-    assets/Background.png
-    assets/Logo.png
     assets/Inter-Bold.ttf
     assets/Inter-Medium.ttf
+    assets/3.02.26.png
+    assets/3_02_26_open.png
+    assets/3_02_26_close.png
 )
 
 add_library(fernshy::pandoras_box_plugin_assets ALIAS pandoras_box_plugin_assets)

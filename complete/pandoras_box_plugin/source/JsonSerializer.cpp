@@ -1,16 +1,22 @@
 namespace {
 struct SerializableParameters {
-  float rate;
+  float time;
+  float breath;
+  float order;
+  float chaos;
+  float space;
+  float reflection;
+  float fracture;
+  float wrath;
   bool bypassed;
-  juce::String waveform;
 
-  static constexpr auto marshallingVersion = 1;
+  static constexpr auto marshallingVersion = 4;
 
   template <typename Archive, typename T>
   static void serialise(Archive& archive, T& p) {
     using namespace juce;
 
-    if (archive.getVersion() != 1) {
+    if (archive.getVersion() != 4) {
       return;
     }
 
@@ -22,16 +28,29 @@ struct SerializableParameters {
       return;
     }
 
-    archive(named("modulationRateHz", p.rate), named("bypassed", p.bypassed),
-            named("modulationWaveform", p.waveform));
+    archive(named("time", p.time),
+            named("breath", p.breath),
+            named("order", p.order),
+            named("chaos", p.chaos),
+            named("space", p.space),
+            named("reflection", p.reflection),
+            named("fracture", p.fracture),
+            named("wrath", p.wrath),
+            named("bypassed", p.bypassed));
   }
 };
 
 SerializableParameters from(const pandoras_box::Parameters& p) {
   return {
-      .rate = p.rate.get(),
+      .time = p.time.get(),
+      .breath = p.breath.get(),
+      .order = p.order.get(),
+      .chaos = p.chaos.get(),
+      .space = p.space.get(),
+      .reflection = p.reflection.get(),
+      .fracture = p.fracture.get(),
+      .wrath = p.wrath.get(),
       .bypassed = p.bypassed.get(),
-      .waveform = p.waveform.getCurrentChoiceName(),
   };
 }
 }  // namespace
@@ -69,17 +88,14 @@ juce::Result JsonSerializer::deserialize(juce::InputStream& input,
         "failed to parse parameters from JSON representation");
   }
 
-  const auto modulationWaveformIndex =
-      parameters.waveform.choices.indexOf(parsedParameters->waveform);
-  if (modulationWaveformIndex < 0) {
-    // don't update parameters if modulation waveform name is invalid
-    return juce::Result::fail(
-        "invalid modulation waveform name; supported values are: " +
-        parameters.waveform.choices.joinIntoString(", "));
-  }
-
-  parameters.waveform = modulationWaveformIndex;
-  parameters.rate = parsedParameters->rate;
+  parameters.time = parsedParameters->time;
+  parameters.breath = parsedParameters->breath;
+  parameters.order = parsedParameters->order;
+  parameters.chaos = parsedParameters->chaos;
+  parameters.space = parsedParameters->space;
+  parameters.reflection = parsedParameters->reflection;
+  parameters.fracture = parsedParameters->fracture;
+  parameters.wrath = parsedParameters->wrath;
   parameters.bypassed = parsedParameters->bypassed;
 
   return juce::Result::ok();
