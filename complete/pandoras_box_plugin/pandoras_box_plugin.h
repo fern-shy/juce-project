@@ -42,6 +42,7 @@ END_JUCE_MODULE_DECLARATION
 
 #include "include/PandorasBox/Parameters.h"
 #include "include/PandorasBox/CustomLookAndFeel.h"
+#include "include/PandorasBox/EyeGlow.h"
 #include "include/PandorasBox/JsonSerializer.h"
 #include "include/PandorasBox/LfoVisualizer.h"
 #include "include/PandorasBox/SampleFifo.h"

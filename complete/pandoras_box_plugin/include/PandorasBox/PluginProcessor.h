@@ -42,11 +42,17 @@ public:
 
   double getSampleRateThreadSafe() const noexcept;
 
+  // Thread-safe output level (approx. RMS, 0..1) for UI metering.
+  [[nodiscard]] float getOutputLevel() const noexcept;
+
 private:
+  void updateOutputLevel(const juce::AudioBuffer<float>& buffer) noexcept;
+
   Parameters parameters{*this};
   EffectChain effectChain;
   BypassTransitionSmoother bypassTransitionSmoother;
   std::atomic<double> currentSampleRate{0.};
+  std::atomic<float> outputLevel{0.f};
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginProcessor)
 };

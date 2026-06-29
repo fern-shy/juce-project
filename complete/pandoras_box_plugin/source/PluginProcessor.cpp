@@ -100,6 +100,7 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
   bypassTransitionSmoother.setBypass(parameters.bypassed);
 
   if (bypassedAndNotTransitioning) {
+    updateOutputLevel(buffer);
     return;
   }
 
@@ -116,6 +117,8 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                       parameters.wrath.get());
 
   bypassTransitionSmoother.mixToWetBuffer(buffer);
+
+  updateOutputLevel(buffer);
 }
 
 bool PluginProcessor::hasEditor() const {
@@ -166,6 +169,28 @@ void PluginProcessor::randomizeBoth() {
 
 double PluginProcessor::getSampleRateThreadSafe() const noexcept {
   return currentSampleRate;
+}
+
+float PluginProcessor::getOutputLevel() const noexcept {
+  return outputLevel.load(std::memory_order_relaxed);
+}
+
+void PluginProcessor::updateOutputLevel(
+    const juce::AudioBuffer<float>& buffer) noexcept {
+  const auto numChannels = buffer.getNumChannels();
+  const auto numSamples = buffer.getNumSamples();
+
+  if (numChannels <= 0 || numSamples <= 0) {
+    return;
+  }
+
+  float sum = 0.f;
+  for (int channel = 0; channel < numChannels; ++channel) {
+    sum += buffer.getRMSLevel(channel, 0, numSamples);
+  }
+
+  outputLevel.store(sum / static_cast<float>(numChannels),
+                    std::memory_order_relaxed);
 }
 }  // namespace pandoras_box
 
