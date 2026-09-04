@@ -5,7 +5,7 @@ BEGIN_JUCE_MODULE_DECLARATION
 
    ID:            pandoras_box_plugin
    vendor:        FernShy
-   version:       1.0.0
+   version:       1.0.1
    name:          Pandoras Box Plugin
    description:   Core of the Pandoras Box chaos generator plugin
    dependencies:  juce_audio_utils, juce_dsp
