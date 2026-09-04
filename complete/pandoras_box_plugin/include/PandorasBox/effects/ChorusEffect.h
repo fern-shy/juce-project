@@ -1,0 +1,32 @@
+#pragma once
+
+namespace pandoras_box {
+class ChorusEffect {
+public:
+  void prepare(double sampleRate, int maxBlockSize, int numChannels) {
+    chorus.prepare({sampleRate,
+                    static_cast<juce::uint32>(maxBlockSize),
+                    static_cast<juce::uint32>(numChannels)});
+    chorus.reset();
+  }
+
+  void setParameters(float rate, float depth, float mixLevel,
+                     float centreDelay = 7.0f, float fb = -0.2f) {
+    chorus.setRate(juce::jlimit(0.1f, 7.0f, rate));
+    chorus.setDepth(juce::jlimit(0.0f, 1.0f, depth));
+    chorus.setMix(juce::jlimit(0.0f, 1.0f, mixLevel));
+    chorus.setCentreDelay(juce::jlimit(1.0f, 20.0f, centreDelay));
+    chorus.setFeedback(juce::jlimit(-0.95f, 0.95f, fb));
+  }
+
+  void process(juce::AudioBuffer<float>& buffer) {
+    auto block = juce::dsp::AudioBlock<float>(buffer);
+    chorus.process(juce::dsp::ProcessContextReplacing<float>(block));
+  }
+
+  void reset() { chorus.reset(); }
+
+private:
+  juce::dsp::Chorus<float> chorus;
+};
+}  // namespace pandoras_box

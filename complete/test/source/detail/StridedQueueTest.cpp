@@ -1,8 +1,8 @@
-#include <tremolo_plugin/tremolo_plugin.h>
+#include <pandoras_box_plugin/pandoras_box_plugin.h>
 #include <gtest/gtest.h>
 #include <vector>
 
-namespace tremolo::detail {
+namespace pandoras_box::detail {
 TEST(StridedQueue, pushBack) {
   StridedQueue<int, 5> testee;
   testee.setStride(3u);
@@ -69,4 +69,4 @@ TEST(StridedQueue, pushBack) {
   ASSERT_EQ(80, testee.at(3u));
   ASSERT_EQ(90, testee.at(4u));
 }
-}  // namespace tremolo::detail
+}  // namespace pandoras_box::detail

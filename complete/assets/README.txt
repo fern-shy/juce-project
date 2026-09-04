@@ -1,21 +1,45 @@
-This is a VST3 audio plugin named Tremolo developed by Jan Wilczek.
+Pandoras Box 1.0.0
+FernShy
 
-To install it on your system:
+Pandoras Box is available as a universal macOS audio effect for Apple Silicon
+and Intel and as a 64-bit Windows VST3.
 
-1. Copy the .vst3 bundle to
+SYSTEM REQUIREMENTS
 
-    ~/Library/Audio/Plug-Ins/VST3/
-    if you're on macOS,
+macOS 11 or newer, or 64-bit Windows 10 or newer.
 
-    %LOCALAPPDATA%/Programs/Common/VST3/
-    if you're on Windows,
+MACOS INSTALLATION
 
-    ~/.vst3/
-    if you're on Linux.
+Use the signed Pandoras Box installer package when available.
 
-    Depending on the operating system, this operation may require elevated permissions.
+For manual installation:
 
-2. Reload your DAW.
+AU:
+  Copy "Pandoras Box.component" to:
+  ~/Library/Audio/Plug-Ins/Components/
 
-All rights reserved.
+VST3:
+  Copy "Pandoras Box.vst3" to:
+  ~/Library/Audio/Plug-Ins/VST3/
 
+Restart your DAW and perform a full plugin rescan. Existing track instances may
+retain cached metadata; remove and reinsert them if the host shows stale
+parameters.
+
+WINDOWS INSTALLATION
+
+Extract the ZIP, then copy "Pandoras Box.vst3" to:
+  C:\Program Files\Common Files\VST3\
+
+Administrator permission is normally required. Restart your DAW and perform a
+full plugin rescan. Use the 64-bit version of the DAW.
+
+UNINSTALLATION
+
+Delete the corresponding plugin from the installation folder, then restart the
+DAW.
+
+LICENSES
+
+Pandoras Box source code is licensed under MIT. See LICENSE.md.
+Third-party notices are provided in THIRD_PARTY_LICENSES.md.

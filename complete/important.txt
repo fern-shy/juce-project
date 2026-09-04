@@ -1,0 +1,28 @@
+DEVELOPMENT BUILD
+
+From the complete/ directory:
+
+cmake --preset default
+cmake --build --preset default
+
+This builds AU and VST3 and installs them into:
+
+~/Library/Audio/Plug-Ins/Components/
+~/Library/Audio/Plug-Ins/VST3/
+
+PUBLIC RELEASE BUILD
+
+macOS:
+
+cmake --preset macos-release
+cmake --build --preset macos-release
+ctest --preset macos-release
+
+Windows (PowerShell):
+
+cmake --preset windows-release
+cmake --build --preset windows-release
+ctest --preset windows-release
+
+Release builds are not installed automatically. Follow RELEASING.md to sign,
+notarize, package, and validate them.

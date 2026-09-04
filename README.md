@@ -1,88 +1,76 @@
-<div align="center">
+# Pandoras Box
 
-# Tremolo Audio Plugin
+Pandoras Box is a chaos-oriented audio effect by FernShy. Three interactive
+eyes randomize hidden DSP parameters, effect routing, or both. Eight host
+macros control the intensity of Time, Breath, Order, Chaos, Space, Reflection,
+Fracture, and Wrath.
 
-[![License](https://img.shields.io/badge/license-Unlicense-blue.svg)](LICENSE.md)
-![Build Status](https://github.com/juce-framework/tremolo-juce-course/actions/workflows/cmake.yml/badge.svg)
-![CMake](https://img.shields.io/badge/CMake-3.25+-064F8C.svg?logo=cmake)
-![C++](https://img.shields.io/badge/C++-23-00599C.svg?logo=cplusplus)
-![JUCE](https://img.shields.io/badge/JUCE-8.0.10-orange.svg)
-![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)
+## Formats and requirements
 
-<img alt="Tremolo user interface" src="docs/UI.png" width="512px">
+- Audio Unit (AU) on macOS
+- VST3 on macOS and 64-bit Windows
+- macOS 11 or newer (Apple Silicon and Intel)
+- Windows 10 or newer (x64)
+- CMake 3.25 or newer
+- Xcode command-line tools on macOS or Visual Studio 2022 with C++ on Windows
 
-Tremolo audio plugin project used for the [Official JUCE Audio Plugin Development Course](https://www.wolfsoundacademy.com/juce) 🎓
+The project uses JUCE 8.0.12 and C++23.
 
-![JUCE audio plugin development course logo](docs/JUCE_Course_logo.svg)
+## Development build
 
-</div>
+From the `complete` directory:
 
-## ✨ Features
+```bash
+cmake --preset default
+cmake --build --preset default
+```
 
-* Preconfigured plugin formats:
-  * AU
-  * VST3
-  * Standalone
-* Tremolo audio effect: tremolo is amplitude modulation at a rate below the human hearing range. The result is a "pulsing" sound.
-* Parameters
-  * modulation rate
-  * LFO waveform
-  * bypass
-* Real-time LFO visualization
-* Custom UI
-* State serialization
-* Template *README.txt* for distribution
-* Configured GitHub Actions CI pipeline
-* Unit tests using [googletest](https://github.com/google/googletest)
-* CMake presets, including "release"
-* Automatic dependency downloading using [CPM](https://github.com/cpm-cmake/CPM.cmake)
-* Helper *.clang-format*, *.clang-tidy*, and *.pre-commit-config.yaml* configuration files
+Development builds install into the current user's plugin folders:
 
-## 📋 Requirements
+- AU: `~/Library/Audio/Plug-Ins/Components`
+- VST3: `~/Library/Audio/Plug-Ins/VST3`
 
-You need to have the following software installed your machine:
+## Release build and tests
 
-* Git version control system
-* CMake 3.25 or higher (the one bundled with CLion 2025.1.1 or higher should work)
-* C++ compiler and build system. Tested on:
-  * macOS: Xcode 15.4 (Apple Clang 15.0.0.15000309), 16.4 (Apple Clang 17.0.0.17000013)
-  * Windows: Visual Studio 2022 17.14.13 (MSVC 19.44.35215)
-  * Ubuntu, Debian: gcc 12.2.0, 13.3.0 and make 4.3
+```bash
+cd complete
+cmake --preset macos-release
+cmake --build --preset macos-release
+ctest --preset macos-release
+```
 
-## 🚀 Getting Started
+Release artifacts are created under
+`complete/cmake-macos-release-build/FernShyPandorasBoxPlugin_artefacts/Release`.
+The release preset does not install or overwrite local development plugins.
 
-**Detailed instructions on the setup process [are described in the course.](https://www.wolfsoundacademy.com/juce)**
+For a Windows x64 VST3:
 
-1. Click “Use this template” on GitHub to create your own copy and begin your project.
-2. Clone **your repository** locally.
-3. Build the *complete/* plugin
-   1. Open the *complete/* folder in CLion, or
-   2. In the main repo directory execute
+```powershell
+cd complete
+cmake --preset windows-release
+cmake --build --preset windows-release
+ctest --preset windows-release
+```
 
-      ```bash
-      cd complete
-      cmake --preset default
-      cmake --build --preset default
-      ```
+The Windows artifact is created under
+`complete\cmake-windows-release-build\FernShyPandorasBoxPlugin_artefacts\Release`.
 
-The first build will take the most time because the dependencies (CPM and JUCE) need to be downloaded.
+See `complete/RELEASING.md` for signing, notarization, packaging, validation,
+and clean-machine testing instructions.
 
-Build artifacts will be located at *complete/cmake-build/TremoloCoursePlugin_artefacts/Debug*.
+## State and rendering
 
-## 📂 Structure
+Randomized settings and routing are regenerated from seeds stored in plugin
+state. Saving and reopening a session therefore restores the same hidden
+parameter set. Delay, reverb, and comb-filter memory is not serialized, so a
+render should begin before the desired section or include pre-roll when an
+existing tail must be reproduced.
 
-This repository is a template. Click “Use this template” on GitHub to create your own copy and begin your project.
+## License
 
-The plugin project is present in two folders:
+Pandoras Box source code is released under the
+[MIT License](LICENSE.md). Third-party components retain their own licenses;
+see [`complete/THIRD_PARTY_LICENSES.md`](complete/THIRD_PARTY_LICENSES.md).
 
-* *complete/* contains the completed tremolo plugin project. It compiles and runs out of the box.
-* *todo/* contains skeleton code of the same plugin. This is the code you will work on throughout the course to gradually bring it to the same state as the *complete/* folder. In its default state, it does not compile.
-
-## 🤝 Contributing
-
-* If you find a bug, please, open an issue and/or provide a pull request.
-* Feature requests won't be merged because the goal of the repository is to be educational not feature-full.
-
-## 📜 License
-
-We use the incredibly liberal ["Unlicense" license](LICENSE.md). You can basically do whatever you want with the code. Remember that the commercial use of products built with JUCE requires a JUCE license. Refer to the JUCE license for details.
+JUCE usage and distribution additionally require compliance with either the
+commercial JUCE license or AGPLv3, as applicable to the distributor.
