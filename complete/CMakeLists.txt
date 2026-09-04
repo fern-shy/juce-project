@@ -14,7 +14,7 @@ if(APPLE)
 endif()
 
 # Sets a few variables, like PROJECT_NAME.
-project(FernShyPandorasBoxPlugin VERSION 1.0.0 LANGUAGES C CXX)
+project(FernShyPandorasBoxPlugin VERSION 1.0.1 LANGUAGES C CXX)
 
 # Set the C++ standard only if this project is standalone;
 # otherwise, let clients decide.
@@ -92,7 +92,7 @@ juce_add_plugin(
   FORMATS
     ${FERNSHY_PANDORAS_BOX_FORMATS}
   ICON_BIG
-    assets/Logo.png
+    assets/3_02_26_open.png
   IS_SYNTH
     FALSE
   NEEDS_MIDI_INPUT

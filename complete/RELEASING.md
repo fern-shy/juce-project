@@ -91,7 +91,7 @@ Before publishing a version:
 The release version is defined once in `CMakeLists.txt`:
 
 ```cmake
-project(FernShyPandorasBoxPlugin VERSION 1.0.0 LANGUAGES C CXX)
+project(FernShyPandorasBoxPlugin VERSION 1.0.1 LANGUAGES C CXX)
 ```
 
 Never change existing parameter IDs. Increase the patch version for compatible
