@@ -46,6 +46,32 @@
       }
     },
     {
+      "name": "macos-release",
+      "binaryDir": "cmake-macos-release-build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_OSX_ARCHITECTURES": "arm64;x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "PANDORAS_BOX_COPY_PLUGIN_AFTER_BUILD": "OFF",
+        "BUILD_TESTS": "ON",
+        "BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
+      "name": "windows-release",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "cmake-windows-release-build",
+      "cacheVariables": {
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+        "PANDORAS_BOX_COPY_PLUGIN_AFTER_BUILD": "OFF",
+        "BUILD_TESTS": "ON",
+        "BUILD_EXAMPLES": "OFF"
+      }
+    },
+    {
       "name": "release-with-debug-info",
       "binaryDir": "cmake-release-with-debug-info-build",
       "cacheVariables": {
@@ -112,6 +138,15 @@
       "configuration": "Release"
     },
     {
+      "name": "macos-release",
+      "configurePreset": "macos-release"
+    },
+    {
+      "name": "windows-release",
+      "configurePreset": "windows-release",
+      "configuration": "Release"
+    },
+    {
       "name": "release-with-debug-info",
       "configurePreset": "release-with-debug-info",
       "configuration": "RelWithDebInfo"
@@ -152,6 +187,17 @@
       "name": "release-with-tests",
       "inherits": "default-with-tests",
       "configurePreset": "release-with-tests"
+    },
+    {
+      "name": "macos-release",
+      "inherits": "default-with-tests",
+      "configurePreset": "macos-release"
+    },
+    {
+      "name": "windows-release",
+      "inherits": "default-with-tests",
+      "configurePreset": "windows-release",
+      "configuration": "Release"
     },
     {
       "name": "ninja-debug",

@@ -1,101 +1,207 @@
-name: CMake
+name: Cross-platform Release
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
   push:
-    branches: [ "main" ]
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
 
 jobs:
-  build-unix:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        preset: [ninja-debug, ninja-release]
-
-    runs-on: ${{ matrix.os }}
+  build-test:
+    runs-on: macos-14
 
     steps:
-    - name: List Xcode installations
-      if: matrix.os == 'macos-14'
-      run: sudo ls -1 /Applications | grep "Xcode"
+      - uses: actions/checkout@v4
 
-    - name: Select Xcode 16.2
-      if: matrix.os == 'macos-14'
-      run: sudo xcode-select -s /Applications/Xcode_16.2.0.app/Contents/Developer
+      - name: Install pluginval
+        run: brew install --cask pluginval
 
-    - name: Install JUCE dependencies on Ubuntu
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-          sudo apt update
-          sudo apt install libasound2-dev libjack-jackd2-dev \
-               ladspa-sdk \
-               libcurl4-openssl-dev  \
-               libfreetype-dev libfontconfig1-dev \
-               libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev \
-               libwebkit2gtk-4.1-dev \
-               libglu1-mesa-dev mesa-common-dev
+      - name: Configure universal Release build
+        working-directory: complete
+        run: cmake --preset macos-release
 
-    - name: Install ninja-build tool
-      uses: seanmiddleditch/gha-setup-ninja@v5
+      - name: Build
+        working-directory: complete
+        run: cmake --build --preset macos-release
 
-    - name: Cache ninja-build
-      uses: actions/cache@v4
-      with:
-        key: ${{ runner.os }}-ninja-build
-        path: |
-          ${GITHUB_WORKSPACE}/ninja-build
+      - name: Unit tests
+        working-directory: complete
+        run: ctest --preset macos-release
 
-    - uses: actions/checkout@v4
+      - name: Verify universal architectures
+        working-directory: complete
+        run: |
+          AU_BIN="cmake-macos-release-build/FernShyPandorasBoxPlugin_artefacts/Release/AU/Pandoras Box.component/Contents/MacOS/Pandoras Box"
+          VST3_BIN="cmake-macos-release-build/FernShyPandorasBoxPlugin_artefacts/Release/VST3/Pandoras Box.vst3/Contents/MacOS/Pandoras Box"
+          lipo -archs "$AU_BIN" | awk '/arm64/ && /x86_64/ { found=1 } END { exit !found }'
+          lipo -archs "$VST3_BIN" | awk '/arm64/ && /x86_64/ { found=1 } END { exit !found }'
 
-    - name: Cache dependencies
-      id: cache-libs
-      uses: actions/cache@v4
-      with:
-        path: complete/libs
-        key: ${{ runner.os }}-libs-${{ hashFiles('complete/CMakeLists.txt') }}-${{ hashFiles('complete/test/CMakeLists.txt') }}
+      - name: Validate VST3 with pluginval
+        working-directory: complete
+        run: |
+          /Applications/pluginval.app/Contents/MacOS/pluginval \
+            --strictness-level 10 \
+            --validate-in-process \
+            --validate "cmake-macos-release-build/FernShyPandorasBoxPlugin_artefacts/Release/VST3/Pandoras Box.vst3"
 
-    - name: Configure CMake
-      working-directory: ${{ github.workspace }}/complete
-      run: cmake --preset ${{ matrix.preset }}
+      - name: Validate Audio Unit
+        working-directory: complete
+        run: |
+          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
+          ditto \
+            "cmake-macos-release-build/FernShyPandorasBoxPlugin_artefacts/Release/AU/Pandoras Box.component" \
+            "$HOME/Library/Audio/Plug-Ins/Components/Pandoras Box.component"
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          auval -v aufx Pbox Fshy
 
-    - name: Build
-      working-directory: ${{ github.workspace }}/complete
-      run: cmake --build --preset ${{ matrix.preset }}
+      - name: Upload unsigned test artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: PandorasBox-macOS-universal-unsigned
+          path: |
+            complete/cmake-macos-release-build/FernShyPandorasBoxPlugin_artefacts/Release/AU/Pandoras Box.component
+            complete/cmake-macos-release-build/FernShyPandorasBoxPlugin_artefacts/Release/VST3/Pandoras Box.vst3
 
-    - name: Test
-      working-directory: ${{github.workspace}}/complete
-      run: ctest --preset ${{ matrix.preset }}
-
-  build-windows:
-    strategy:
-      matrix:
-        os: [windows-latest]
-        config: [Debug, Release]
-
-    runs-on: ${{ matrix.os }}
+  sign-notarize:
+    needs: build-test
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
 
     steps:
-    - uses: ilammy/msvc-dev-cmd@v1 # use MSVC on Windows not minGW
+      - uses: actions/checkout@v4
 
-    - uses: actions/checkout@v4
+      - name: Import Developer ID certificates
+        env:
+          APPLICATION_P12: ${{ secrets.MACOS_APPLICATION_P12 }}
+          APPLICATION_PASSWORD: ${{ secrets.MACOS_APPLICATION_P12_PASSWORD }}
+          INSTALLER_P12: ${{ secrets.MACOS_INSTALLER_P12 }}
+          INSTALLER_PASSWORD: ${{ secrets.MACOS_INSTALLER_P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/release.keychain-db"
+          echo "$APPLICATION_P12" | base64 -D > "$RUNNER_TEMP/application.p12"
+          echo "$INSTALLER_P12" | base64 -D > "$RUNNER_TEMP/installer.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/application.p12" -k "$KEYCHAIN" -P "$APPLICATION_PASSWORD" -T /usr/bin/codesign
+          security import "$RUNNER_TEMP/installer.p12" -k "$KEYCHAIN" -P "$INSTALLER_PASSWORD" -T /usr/bin/productbuild -T /usr/bin/pkgbuild
+          security list-keychains -d user -s "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
 
-    - name: Cache dependencies
-      id: cache-libs
-      uses: actions/cache@v4
-      with:
-        path: complete/libs
-        key: ${{ runner.os }}-libs-${{ hashFiles('complete/CMakeLists.txt') }}-${{ hashFiles('complete/test/CMakeLists.txt') }}
+      - name: Configure notarization profile
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          xcrun notarytool store-credentials "pandoras-box-ci" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD"
 
-    - name: Configure CMake
-      working-directory: ${{ github.workspace }}/complete
-      run: cmake --preset vs
+      - name: Build, sign, notarize, and package
+        working-directory: complete
+        env:
+          DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
+          DEVELOPER_ID_INSTALLER: ${{ secrets.DEVELOPER_ID_INSTALLER }}
+          NOTARY_PROFILE: pandoras-box-ci
+        run: ./scripts/release_macos.sh
 
-    - name: Build
-      working-directory: ${{ github.workspace }}/complete
-      run: cmake --build --preset vs --config ${{ matrix.config }}
+      - name: Upload public release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: PandorasBox-macOS-public-release
+          path: complete/dist/*.zip
 
-    - name: Test
-      working-directory: ${{ github.workspace }}/complete
-      run: ctest --preset vs -C ${{ matrix.config }}
+  windows-build-test:
+    runs-on: windows-2022
 
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download pluginval
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod `
+            "https://api.github.com/repos/Tracktion/pluginval/releases/latest"
+          $asset = $release.assets |
+            Where-Object { $_.name -match '(?i)windows.*\.zip$|win.*\.zip$' } |
+            Select-Object -First 1
+          if (-not $asset) { throw "No Windows pluginval archive found" }
+          Invoke-WebRequest $asset.browser_download_url -OutFile pluginval.zip
+          Expand-Archive pluginval.zip -DestinationPath pluginval
+          $exe = Get-ChildItem pluginval -Filter pluginval.exe -Recurse |
+            Select-Object -First 1
+          if (-not $exe) { throw "pluginval.exe was not found in the archive" }
+          "PLUGINVAL_PATH=$($exe.FullName)" >> $env:GITHUB_ENV
+
+      - name: Build, test, validate, and package
+        working-directory: complete
+        shell: pwsh
+        run: >
+          ./scripts/release_windows.ps1
+          -PluginvalPath "$env:PLUGINVAL_PATH"
+
+      - name: Upload unsigned test artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PandorasBox-Windows-x64-unsigned
+          path: complete/dist/*Windows-x64-unsigned.zip
+
+  windows-sign:
+    needs: windows-build-test
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download pluginval
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod `
+            "https://api.github.com/repos/Tracktion/pluginval/releases/latest"
+          $asset = $release.assets |
+            Where-Object { $_.name -match '(?i)windows.*\.zip$|win.*\.zip$' } |
+            Select-Object -First 1
+          if (-not $asset) { throw "No Windows pluginval archive found" }
+          Invoke-WebRequest $asset.browser_download_url -OutFile pluginval.zip
+          Expand-Archive pluginval.zip -DestinationPath pluginval
+          $exe = Get-ChildItem pluginval -Filter pluginval.exe -Recurse |
+            Select-Object -First 1
+          if (-not $exe) { throw "pluginval.exe was not found in the archive" }
+          "PLUGINVAL_PATH=$($exe.FullName)" >> $env:GITHUB_ENV
+
+      - name: Decode code-signing certificate
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_PFX: ${{ secrets.WINDOWS_CERTIFICATE_PFX }}
+        run: |
+          if (-not $env:WINDOWS_CERTIFICATE_PFX) {
+            throw "WINDOWS_CERTIFICATE_PFX is not configured"
+          }
+          $path = Join-Path $env:RUNNER_TEMP "windows-release.pfx"
+          [IO.File]::WriteAllBytes(
+            $path,
+            [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_PFX))
+          "WINDOWS_CERTIFICATE_PATH=$path" >> $env:GITHUB_ENV
+
+      - name: Build, validate, sign, and package
+        working-directory: complete
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: >
+          ./scripts/release_windows.ps1
+          -PluginvalPath "$env:PLUGINVAL_PATH"
+          -CertificatePath "$env:WINDOWS_CERTIFICATE_PATH"
+          -CertificatePassword "$env:WINDOWS_CERTIFICATE_PASSWORD"
+
+      - name: Upload public release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: PandorasBox-Windows-x64-public-release
+          path: complete/dist/*Windows-x64.zip

@@ -22,7 +22,7 @@ bool PluginProcessor::isMidiEffect() const {
 }
 
 double PluginProcessor::getTailLengthSeconds() const {
-  return 0.0;
+  return effectChain.getTailLengthSeconds();
 }
 
 int PluginProcessor::getNumPrograms() {
@@ -131,16 +131,24 @@ juce::AudioProcessorEditor* PluginProcessor::createEditor() {
 
 void PluginProcessor::getStateInformation(juce::MemoryBlock& destData) {
   juce::MemoryOutputStream outputStream{destData, true};
-  JsonSerializer::serialize(parameters, outputStream);
+  JsonSerializer::serialize(parameters, effectChain.getParamSeed(),
+                            effectChain.getOrderSeed(), outputStream);
 }
 
 void PluginProcessor::setStateInformation(const void* data, int sizeInBytes) {
   juce::MemoryInputStream inputStream{data, static_cast<size_t>(sizeInBytes),
                                       false};
-  const auto result = JsonSerializer::deserialize(inputStream, parameters);
+  int paramSeed = 0;
+  int orderSeed = 0;
+  const auto result =
+      JsonSerializer::deserialize(inputStream, parameters, paramSeed, orderSeed);
 
   if (result.failed()) {
-    DBG(result.getErrorMessage());
+    juce::Logger::writeToLog("Pandoras Box: state restore failed: " +
+                             result.getErrorMessage());
+  } else {
+    // Reproduce the exact randomized state that was saved.
+    effectChain.setState(paramSeed, orderSeed);
   }
 
   bypassTransitionSmoother.setBypassForced(parameters.bypassed);

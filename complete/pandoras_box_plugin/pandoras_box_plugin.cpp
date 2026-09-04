@@ -1,7 +1,5 @@
 #include "pandoras_box_plugin.h"
 #include <PandorasBoxPluginAssets.h>
-#include "source/LfoVisualizer.cpp"
-#include "source/CustomLookAndFeel.cpp"
 #include "source/JsonSerializer.cpp"
 #include "source/Parameters.cpp"
 #include "source/PluginEditor.cpp"

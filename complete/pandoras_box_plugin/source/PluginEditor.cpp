@@ -21,11 +21,6 @@ PluginEditor::PluginEditor(PluginProcessor& p)
   background.setInterceptsMouseClicks(false, false);
   addAndMakeVisible(background);
 
-  // Glow sits above the background but below the eyes, so the halos read as
-  // light bleeding out from behind each eye.
-  glow.setGlowColour(juce::Colour{0xFFFF2A2A});
-  addAndMakeVisible(glow);
-
   auto openImg = juce::ImageCache::getFromMemory(
       assets::_3_02_26_open_png, assets::_3_02_26_open_pngSize);
   auto closedImg = juce::ImageCache::getFromMemory(
@@ -81,7 +76,6 @@ PluginEditor::~PluginEditor() {
 void PluginEditor::resized() {
   const auto bounds = getLocalBounds();
   background.setBounds(bounds);
-  glow.setBounds(bounds);
 
   const int smallEye = 120;
   const int bigEye = 160;
@@ -103,11 +97,6 @@ void PluginEditor::resized() {
   bothEye.setBounds(bothEyeBase);
   orderEye.setBounds(orderEyeBase);
 
-  glow.setSpots(paramsEyeBase.getCentre().toFloat(),
-                bothEyeBase.getCentre().toFloat(),
-                orderEyeBase.getCentre().toFloat(),
-                static_cast<float>(smallEye) * 0.55f);
-
   // Bypass bottom-right
   bypassButton.setBounds(bounds.getWidth() - 100, bounds.getHeight() - 30,
                           90, 24);
@@ -115,15 +104,13 @@ void PluginEditor::resized() {
 
 void PluginEditor::timerCallback() {
   // Map the raw RMS (typically small) into a usable 0..1 range, then apply a
-  // fast attack / slow release so the glow strobes with transients.
+  // fast attack / slow release so the motion follows transients.
   constexpr float levelGain = 4.0f;
   constexpr float releaseCoeff = 0.86f;
 
   const float raw =
       juce::jlimit(0.f, 1.f, processorRef.getOutputLevel() * levelGain);
   displayLevel = juce::jmax(raw, displayLevel * releaseCoeff);
-
-  glow.setLevel(displayLevel);
 
   // Subtle pulse: scale each eye around its resting centre.
   const float scale = 1.0f + displayLevel * 0.14f;

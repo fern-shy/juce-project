@@ -18,8 +18,7 @@ public:
 
   EffectChain() {
     for (int i = 0; i < NUM_GROUPS; ++i)
-      groupOrder[i] = i;
-    pendingGroupOrder = groupOrder;
+      groupOrder[static_cast<size_t>(i)] = i;
   }
 
   void prepare(double sampleRate, int maxBlockSize, int numChannels) {
@@ -55,102 +54,66 @@ public:
                      static_cast<juce::uint32>(numChannels)});
     limiter.setThreshold(-1.0f);
     limiter.setRelease(50.0f);
+    limiter.reset();
 
     dryBuffer.setSize(numChannels, maxBlockSize);
+
+    // Apply either the factory defaults or state queued before prepare().
+    stateChanged.store(true, std::memory_order_relaxed);
+    applyPendingState();
   }
 
   // --- Randomization methods ---
+  //
+  // Randomization is fully deterministic given a seed. The eye buttons pick a
+  // fresh seed; the concrete parameter values are (re)generated from it. Only
+  // the seeds are persisted (see get/setState), so reloading a project or
+  // rendering offline reproduces the exact same sound as what was heard live.
 
   void randomizeParams() {
-    std::uniform_real_distribution<float> u(0.0f, 1.0f);
-
-    // Time: 3 delays with individual params
-    for (int d = 0; d < 3; ++d) {
-      delayParams[d].time = 0.01f + u(rng) * 0.99f;
-      delayParams[d].feedback = u(rng) * 0.90f;
-      delayParams[d].mix = u(rng);
-    }
-
-    // Breath: reverb (20% chance of being active)
-    // Bias toward large rooms and low damping for long, spacious tails.
-    breathActive = (u(rng) < 0.2f);
-    if (breathActive) {
-      reverbParams.size = 0.55f + u(rng) * 0.45f;
-      reverbParams.damping = u(rng) * 0.5f;
-      reverbParams.wet = 0.3f + u(rng) * 0.7f;
-      reverbParams.width = 0.6f + u(rng) * 0.4f;
-    }
-
-    // Order: compressor
-    compParams.threshold = -60.0f + u(rng) * 50.0f;
-    compParams.ratio = 1.0f + u(rng) * 19.0f;
-    compParams.attack = 0.1f + u(rng) * 99.9f;
-    compParams.release = 1.0f + u(rng) * 499.0f;
-
-    // Chaos: pitch + ring + chorus + filter
-    chaosParams.pitchSemitones = u(rng) * 24.0f - 12.0f;
-    chaosParams.pitchMix = u(rng);
-    chaosParams.ringFreq = 20.0f + u(rng) * 1980.0f;
-    chaosParams.ringMix = u(rng);
-    chaosParams.chorusRate = 0.1f + u(rng) * 4.9f;
-    chaosParams.chorusDepth = u(rng);
-    chaosParams.chorusMix = u(rng);
-    chaosParams.filterCutoff = 20.0f * std::pow(1000.0f, u(rng));
-    chaosParams.filterResonance = 0.1f + u(rng) * 9.9f;
-    chaosParams.filterType = static_cast<int>(std::floor(u(rng) * 3.0f));
-
-    // Space: stereo widener + detuner
-    spaceParams.width = 1.3f + u(rng) * 1.2f;
-    spaceParams.detune = 5.0f + u(rng) * 25.0f;
-    spaceParams.mix = 0.4f + u(rng) * 0.6f;
-
-    // Reflection: octave layering
-    reflectionParams.upperSemitones = 5.0f + u(rng) * 7.0f;
-    reflectionParams.upperMix = 0.3f + u(rng) * 0.7f;
-    reflectionParams.lowerSemitones = -(5.0f + u(rng) * 7.0f);
-    reflectionParams.lowerMix = 0.3f + u(rng) * 0.7f;
-
-    // Fracture: comb filter bank
-    for (int i = 0; i < 3; ++i) {
-      fractureParams[i].frequency = 80.0f + u(rng) * 1920.0f;
-      fractureParams[i].feedback = 0.7f + u(rng) * 0.28f;
-      fractureParams[i].mix = 0.2f + u(rng) * 0.8f;
-    }
-
-    // Wrath: coloured wavefolder
-    wrathParams.drive = 3.0f + u(rng) * 9.0f;
-    wrathParams.folds = 2 + static_cast<int>(std::floor(u(rng) * 4.0f));
-    wrathParams.symmetry = u(rng);
-    wrathParams.colour = 400.0f + u(rng) * 2600.0f;
-    wrathParams.mix = 0.5f + u(rng) * 0.5f;
-
-    // 10% chance of distortion/bitcrusher
-    destroyActive = (u(rng) < 0.1f);
-    if (destroyActive) {
-      destroyParams.drive = u(rng);
-      destroyParams.tone = 200.0f + u(rng) * 7800.0f;
-      destroyParams.distMix = u(rng);
-      destroyParams.bits = 4.0f + u(rng) * 12.0f;
-      destroyParams.crushRate = 1.0f + u(rng) * 49.0f;
-    }
-
+    paramSeed.store(nextSeed(), std::memory_order_relaxed);
     paramsChanged.store(true, std::memory_order_release);
   }
 
   void randomizeOrder() {
-    std::array<int, NUM_GROUPS> newOrder = pendingGroupOrder;
-    for (int i = NUM_GROUPS - 1; i > 0; --i) {
-      std::uniform_int_distribution<int> dist(0, i);
-      std::swap(newOrder[static_cast<size_t>(i)],
-                newOrder[static_cast<size_t>(dist(rng))]);
-    }
-    pendingGroupOrder = newOrder;
+    orderSeed.store(nextSeed(), std::memory_order_relaxed);
     orderChanged.store(true, std::memory_order_release);
   }
 
   void randomizeBoth() {
-    randomizeParams();
-    randomizeOrder();
+    paramSeed.store(nextSeed(), std::memory_order_relaxed);
+    orderSeed.store(nextSeed(), std::memory_order_relaxed);
+    paramsChanged.store(true, std::memory_order_release);
+    orderChanged.store(true, std::memory_order_release);
+  }
+
+  // --- State (for persistence) ---
+
+  [[nodiscard]] int getParamSeed() const noexcept {
+    return paramSeed.load(std::memory_order_acquire);
+  }
+
+  [[nodiscard]] int getOrderSeed() const noexcept {
+    return orderSeed.load(std::memory_order_acquire);
+  }
+
+  [[nodiscard]] double getTailLengthSeconds() const noexcept {
+    if (paramSeed.load(std::memory_order_acquire) == 0)
+      return 0.0;
+
+    // State changes are applied on the next audio block. Until then, report a
+    // safe baseline rather than telling the host there is no tail.
+    return juce::jmax(30.0,
+                      tailLengthSeconds.load(std::memory_order_relaxed));
+  }
+
+  void setState(int newParamSeed, int newOrderSeed) {
+    // Only atomics cross from the host/message thread to the audio thread.
+    // Parameter structures and effect instances are mutated exclusively by
+    // applyPendingState() on the processing thread.
+    paramSeed.store(newParamSeed, std::memory_order_relaxed);
+    orderSeed.store(newOrderSeed, std::memory_order_relaxed);
+    stateChanged.store(true, std::memory_order_release);
   }
 
   // --- Process ---
@@ -160,15 +123,7 @@ public:
                float orderMacro, float chaosMacro,
                float spaceMacro, float reflectionMacro,
                float fractureMacro, float wrathMacro) {
-    if (orderChanged.load(std::memory_order_acquire)) {
-      groupOrder = pendingGroupOrder;
-      orderChanged.store(false, std::memory_order_relaxed);
-    }
-
-    if (paramsChanged.load(std::memory_order_acquire)) {
-      applyParamsToEffects();
-      paramsChanged.store(false, std::memory_order_relaxed);
-    }
+    applyPendingState();
 
     for (int slot = 0; slot < NUM_GROUPS; ++slot) {
       float macro = 0.0f;
@@ -265,6 +220,155 @@ public:
   }
 
 private:
+  void applyPendingState() {
+    if (stateChanged.exchange(false, std::memory_order_acq_rel)) {
+      generateOrder(orderSeed.load(std::memory_order_acquire));
+      const auto seed = paramSeed.load(std::memory_order_acquire);
+      if (seed == 0)
+        resetParamsToDefaults();
+      else
+        generateParams(seed);
+
+      applyParamsToEffects();
+      updateTailLength();
+      reset();
+      return;
+    }
+
+    if (orderChanged.exchange(false, std::memory_order_acq_rel)) {
+      generateOrder(orderSeed.load(std::memory_order_acquire));
+    }
+
+    if (paramsChanged.exchange(false, std::memory_order_acq_rel)) {
+      const auto seed = paramSeed.load(std::memory_order_acquire);
+      if (seed == 0)
+        resetParamsToDefaults();
+      else
+        generateParams(seed);
+
+      applyParamsToEffects();
+      updateTailLength();
+    }
+  }
+
+  void resetParamsToDefaults() {
+    delayParams = {};
+    breathActive = false;
+    reverbParams = {};
+    compParams = {};
+    chaosParams = {};
+    spaceParams = {};
+    reflectionParams = {};
+    fractureParams = {};
+    wrathParams = {};
+    destroyActive = false;
+    destroyParams = {};
+  }
+
+  // Non-zero random seed for a fresh randomization. The source of new seeds
+  // need not be deterministic -- only regeneration *from* a seed must be.
+  static int nextSeed() {
+    auto& source = juce::Random::getSystemRandom();
+    int seed = 0;
+    while (seed == 0)
+      seed = source.nextInt();
+    return seed;
+  }
+
+  // Deterministic, platform-independent value generation. juce::Random has a
+  // fixed algorithm, so a given seed always yields the same parameter set on
+  // every machine and in both real-time and offline rendering.
+  void generateParams(int seed) {
+    juce::Random r(static_cast<juce::int64>(seed));
+
+    // Time: 3 delays with individual params
+    for (int d = 0; d < 3; ++d) {
+      auto& delay = delayParams[static_cast<size_t>(d)];
+      delay.time = 0.01f + r.nextFloat() * 0.99f;
+      delay.feedback = r.nextFloat() * 0.90f;
+      delay.mix = r.nextFloat();
+    }
+
+    // Breath: reverb (20% chance of being active)
+    // Bias toward large rooms and low damping for long, spacious tails.
+    breathActive = (r.nextFloat() < 0.2f);
+    if (breathActive) {
+      reverbParams.size = 0.55f + r.nextFloat() * 0.45f;
+      reverbParams.damping = r.nextFloat() * 0.5f;
+      reverbParams.wet = 0.3f + r.nextFloat() * 0.7f;
+      reverbParams.width = 0.6f + r.nextFloat() * 0.4f;
+    }
+
+    // Order: compressor
+    compParams.threshold = -60.0f + r.nextFloat() * 50.0f;
+    compParams.ratio = 1.0f + r.nextFloat() * 19.0f;
+    compParams.attack = 0.1f + r.nextFloat() * 99.9f;
+    compParams.release = 1.0f + r.nextFloat() * 499.0f;
+
+    // Chaos: pitch + ring + chorus + filter
+    chaosParams.pitchSemitones = r.nextFloat() * 24.0f - 12.0f;
+    chaosParams.pitchMix = r.nextFloat();
+    chaosParams.ringFreq = 20.0f + r.nextFloat() * 1980.0f;
+    chaosParams.ringMix = r.nextFloat();
+    chaosParams.chorusRate = 0.1f + r.nextFloat() * 4.9f;
+    chaosParams.chorusDepth = r.nextFloat();
+    chaosParams.chorusMix = r.nextFloat();
+    chaosParams.filterCutoff = 20.0f * std::pow(1000.0f, r.nextFloat());
+    chaosParams.filterResonance = 0.1f + r.nextFloat() * 9.9f;
+    chaosParams.filterType = r.nextInt(3);
+
+    // Space: stereo widener + detuner
+    spaceParams.width = 1.3f + r.nextFloat() * 1.2f;
+    spaceParams.detune = 5.0f + r.nextFloat() * 25.0f;
+    spaceParams.mix = 0.4f + r.nextFloat() * 0.6f;
+
+    // Reflection: octave layering
+    reflectionParams.upperSemitones = 5.0f + r.nextFloat() * 7.0f;
+    reflectionParams.upperMix = 0.3f + r.nextFloat() * 0.7f;
+    reflectionParams.lowerSemitones = -(5.0f + r.nextFloat() * 7.0f);
+    reflectionParams.lowerMix = 0.3f + r.nextFloat() * 0.7f;
+
+    // Fracture: comb filter bank
+    for (int i = 0; i < 3; ++i) {
+      auto& fracture = fractureParams[static_cast<size_t>(i)];
+      fracture.frequency = 80.0f + r.nextFloat() * 1920.0f;
+      fracture.feedback = 0.7f + r.nextFloat() * 0.28f;
+      fracture.mix = 0.2f + r.nextFloat() * 0.8f;
+    }
+
+    // Wrath: coloured wavefolder
+    wrathParams.drive = 3.0f + r.nextFloat() * 9.0f;
+    wrathParams.folds = 2 + r.nextInt(4);
+    wrathParams.symmetry = r.nextFloat();
+    wrathParams.colour = 400.0f + r.nextFloat() * 2600.0f;
+    wrathParams.mix = 0.5f + r.nextFloat() * 0.5f;
+
+    // 10% chance of distortion/bitcrusher
+    destroyActive = (r.nextFloat() < 0.1f);
+    if (destroyActive) {
+      destroyParams.drive = r.nextFloat();
+      destroyParams.tone = 200.0f + r.nextFloat() * 7800.0f;
+      destroyParams.distMix = r.nextFloat();
+      destroyParams.bits = 4.0f + r.nextFloat() * 12.0f;
+      destroyParams.crushRate = 1.0f + r.nextFloat() * 49.0f;
+    }
+  }
+
+  void generateOrder(int seed) {
+    for (int i = 0; i < NUM_GROUPS; ++i)
+      groupOrder[static_cast<size_t>(i)] = i;
+
+    // seed 0 == identity order (never randomized)
+    if (seed != 0) {
+      juce::Random r(static_cast<juce::int64>(seed));
+      for (int i = NUM_GROUPS - 1; i > 0; --i) {
+        const int j = r.nextInt(i + 1);
+        std::swap(groupOrder[static_cast<size_t>(i)],
+                  groupOrder[static_cast<size_t>(j)]);
+      }
+    }
+  }
+
   template <typename ProcessFn>
   void processGroup(juce::AudioBuffer<float>& buffer, float macro,
                     ProcessFn fn) {
@@ -328,11 +432,10 @@ private:
                                      reflectionParams.lowerMix);
 
     // Fracture
-    for (int i = 0; i < 3; ++i)
-      combFilters[i].setParameters(
-          fractureParams[i].frequency,
-          fractureParams[i].feedback,
-          fractureParams[i].mix);
+    for (size_t i = 0; i < combFilters.size(); ++i)
+      combFilters[i].setParameters(fractureParams[i].frequency,
+                                   fractureParams[i].feedback,
+                                   fractureParams[i].mix);
 
     // Wrath
     waveFolder.setParameters(wrathParams.drive, wrathParams.folds,
@@ -346,6 +449,36 @@ private:
                                destroyParams.distMix);
       bitCrusher.setParameters(destroyParams.bits, destroyParams.crushRate);
     }
+  }
+
+  void updateTailLength() {
+    constexpr double silenceLevel = 0.001;  // -60 dB
+    double seconds = 0.0;
+
+    for (const auto& delay : delayParams) {
+      if (delay.mix > 0.001f && delay.feedback > 0.001f) {
+        seconds += static_cast<double>(delay.time) *
+                   std::log(silenceLevel) /
+                   std::log(static_cast<double>(delay.feedback));
+      }
+    }
+
+    if (breathActive && reverbParams.wet > 0.001f)
+      seconds = juce::jmax(seconds, 2.0 + 18.0 * reverbParams.size);
+
+    for (const auto& comb : fractureParams) {
+      if (comb.mix > 0.001f && comb.feedback > 0.001f) {
+        const auto delaySeconds = 1.0 / static_cast<double>(comb.frequency);
+        const auto decay = delaySeconds * std::log(silenceLevel) /
+                           std::log(static_cast<double>(comb.feedback));
+        seconds = juce::jmax(seconds, decay);
+      }
+    }
+
+    // Avoid pathological host render extensions while still preserving the
+    // long feedback/reverb tails that define the effect.
+    tailLengthSeconds.store(juce::jlimit(0.0, 120.0, seconds),
+                            std::memory_order_relaxed);
   }
 
   // --- Parameter storage ---
@@ -411,7 +544,6 @@ private:
 
   // --- Routing ---
   std::array<int, NUM_GROUPS> groupOrder{0, 1, 2, 3, 4, 5, 6, 7};
-  std::array<int, NUM_GROUPS> pendingGroupOrder{0, 1, 2, 3, 4, 5, 6, 7};
   std::atomic<bool> orderChanged{false};
 
   // --- Effects ---
@@ -433,7 +565,10 @@ private:
   juce::dsp::Limiter<float> limiter;
 
   juce::AudioBuffer<float> dryBuffer;
-  std::mt19937 rng{std::random_device{}()};
+  std::atomic<int> paramSeed{0};
+  std::atomic<int> orderSeed{0};
+  std::atomic<double> tailLengthSeconds{0.0};
+  std::atomic<bool> stateChanged{true};
   double sr = 44100.0;
 };
 }  // namespace pandoras_box

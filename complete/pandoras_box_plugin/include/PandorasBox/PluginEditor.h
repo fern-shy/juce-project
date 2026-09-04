@@ -16,9 +16,6 @@ private:
 
   juce::ImageComponent background;
 
-  // Volume-reactive glow drawn behind the eyes.
-  EyeGlow glow;
-
   // Left eye: randomize parameters
   juce::ImageButton paramsEye;
   // Center eye: randomize both (placeholder until custom art)
@@ -34,7 +31,7 @@ private:
   juce::Rectangle<int> bothEyeBase;
   juce::Rectangle<int> orderEyeBase;
 
-  // Smoothed level driving the glow/pulse (fast attack, slow release).
+  // Smoothed level driving the pulse (fast attack, slow release).
   float displayLevel = 0.f;
 
   static juce::Image flipHorizontal(const juce::Image& src);

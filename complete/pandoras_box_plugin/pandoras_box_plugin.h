@@ -41,11 +41,7 @@ END_JUCE_MODULE_DECLARATION
 #include "include/PandorasBox/detail/StridedQueue.h"
 
 #include "include/PandorasBox/Parameters.h"
-#include "include/PandorasBox/CustomLookAndFeel.h"
-#include "include/PandorasBox/EyeGlow.h"
 #include "include/PandorasBox/JsonSerializer.h"
-#include "include/PandorasBox/LfoVisualizer.h"
-#include "include/PandorasBox/SampleFifo.h"
 #include "include/PandorasBox/BypassTransitionSmoother.h"
 
 #include "include/PandorasBox/effects/BitCrusher.h"
@@ -63,5 +59,4 @@ END_JUCE_MODULE_DECLARATION
 #include "include/PandorasBox/EffectChain.h"
 
 #include "include/PandorasBox/PluginProcessor.h"
-#include "include/PandorasBox/MessageOnClick.h"
 #include "include/PandorasBox/PluginEditor.h"

@@ -8,14 +8,13 @@ cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 # Enable setting CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
 set(CMAKE_POLICY_DEFAULT_CMP0141        NEW      CACHE STRING "" FORCE)
 
-# Sets the minimum deployment target
-# macOS 10.11 is the minimum required by JUCE
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "" FORCE)
-# Builds a binary that works on Apple Silicon (arm64) and Intel-based Macs
-set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "" FORCE)
+if(APPLE)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "" FORCE)
+  set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "" FORCE)
+endif()
 
 # Sets a few variables, like PROJECT_NAME.
-project(FernShyPandorasBoxPlugin)
+project(FernShyPandorasBoxPlugin VERSION 1.0.0 LANGUAGES C CXX)
 
 # Set the C++ standard only if this project is standalone;
 # otherwise, let clients decide.
@@ -47,8 +46,8 @@ cpmaddpackage(
     8.0.12
   GITHUB_REPOSITORY
     juce-framework/JUCE
-  SOURCE_DIR
-    ${LIB_DIR}/juce
+  GIT_SHALLOW
+    TRUE
 )
 
 # Adds compiler warning utilities & other.
@@ -63,22 +62,37 @@ endif()
 
 # Adds a plugin target.
 set(FERNSHY_PANDORAS_BOX_PLUGIN_NAME "Pandoras Box")
+set(FERNSHY_PANDORAS_BOX_FORMATS VST3)
+if(APPLE)
+  list(APPEND FERNSHY_PANDORAS_BOX_FORMATS AU)
+endif()
+
+option(PANDORAS_BOX_COPY_PLUGIN_AFTER_BUILD
+       "Install development builds into the current user's plugin folders" ON)
 juce_add_plugin(
   FernShyPandorasBoxPlugin
   PRODUCT_NAME
     ${FERNSHY_PANDORAS_BOX_PLUGIN_NAME}
   VERSION
-    0.0.0 # 0 forces AU hosts to always refresh
+    ${PROJECT_VERSION}
   COMPANY_NAME
     "FernShy"
+  COMPANY_WEBSITE
+    "https://fernshy.com"
+  COMPANY_EMAIL
+    "support@fernshy.com"
+  COMPANY_COPYRIGHT
+    "Copyright (c) 2026 FernShy"
+  BUNDLE_ID
+    "com.fernshy.pandorasbox"
   PLUGIN_MANUFACTURER_CODE
     Fshy
   PLUGIN_CODE
     Pbox
   FORMATS
-    Standalone
-    AU
-    VST3
+    ${FERNSHY_PANDORAS_BOX_FORMATS}
+  ICON_BIG
+    assets/Logo.png
   IS_SYNTH
     FALSE
   NEEDS_MIDI_INPUT
@@ -86,9 +100,13 @@ juce_add_plugin(
   NEEDS_MIDI_OUTPUT
     FALSE
   VST3_AUTO_MANIFEST
-    FALSE
-  COPY_PLUGIN_AFTER_BUILD
     TRUE
+  HARDENED_RUNTIME_ENABLED
+    TRUE
+  SUPPRESS_AU_PLIST_RESOURCE_USAGE
+    TRUE
+  COPY_PLUGIN_AFTER_BUILD
+    ${PANDORAS_BOX_COPY_PLUGIN_AFTER_BUILD}
 )
 
 # Configures the JUCE sources included in the plugin target.
@@ -105,8 +123,6 @@ juce_add_binary_data(pandoras_box_plugin_assets
   NAMESPACE
     pandoras_box::assets
   SOURCES
-    assets/Inter-Bold.ttf
-    assets/Inter-Medium.ttf
     assets/3.02.26.png
     assets/3_02_26_open.png
     assets/3_02_26_close.png
@@ -135,18 +151,6 @@ target_link_libraries(
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags
-)
-
-# Zip the .vst3 bundle with the README.txt file
-get_target_property(VST3_BUNDLE_PATH FernShyPandorasBoxPlugin_VST3 JUCE_PLUGIN_ARTEFACT_FILE)
-cmake_path(GET VST3_BUNDLE_PATH PARENT_PATH VST3_BUNDLE_OUTPUT_DIR)
-add_custom_command(
-  TARGET FernShyPandorasBoxPlugin_VST3
-  POST_BUILD
-  WORKING_DIRECTORY ${VST3_BUNDLE_OUTPUT_DIR}
-  # For some reason, if the README.txt is in a different directory, zipping it fails, thus, we need to copy it first
-  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/assets/README.txt" ${VST3_BUNDLE_OUTPUT_DIR}
-  COMMAND ${CMAKE_COMMAND} -E tar cvf "${VST3_BUNDLE_OUTPUT_DIR}/PandorasBox.zip" --format=zip -- "${VST3_BUNDLE_PATH}" README.txt
 )
 
 # In Visual Studio this command provides a nice grouping of source files in "filters".

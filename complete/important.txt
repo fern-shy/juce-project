@@ -1,22 +1,28 @@
-Rebuild after code changes: 
+DEVELOPMENT BUILD
 
-cmake --build --preset default (from the complete/ directory)
+From the complete/ directory:
 
-Run this from the complete/ directory 
-any time you make code changes 
-and want to rebuild. 
-It builds all three plugin formats 
-(Standalone, AU, VST3).
+cmake --preset default
+cmake --build --preset default
 
-Run the standalone app to test: 
+This builds AU and VST3 and installs them into:
 
-open cmake-build/TremoloCoursePlugin_artefacts/Debug/Standalone/Tremolo.app
+~/Library/Audio/Plug-Ins/Components/
+~/Library/Audio/Plug-Ins/VST3/
 
-IntelliSense should now work -- 
-you'll get autocomplete, go-to-definition, 
-and error highlighting for all JUCE APIs 
-and your plugin code
+PUBLIC RELEASE BUILD
 
+macOS:
 
+cmake --preset macos-release
+cmake --build --preset macos-release
+ctest --preset macos-release
 
-open cmake-build/TremoloCoursePlugin_artefacts/Debug/Standalone/Tremolo.app
+Windows (PowerShell):
+
+cmake --preset windows-release
+cmake --build --preset windows-release
+ctest --preset windows-release
+
+Release builds are not installed automatically. Follow RELEASING.md to sign,
+notarize, package, and validate them.

@@ -11,31 +11,16 @@ cpmaddpackage(
     google/googletest
   VERSION
     1.16.0
-  SOURCE_DIR
-    ${LIB_DIR}/googletest
   OPTIONS
     "INSTALL_GTEST OFF"
-    "gtest_force_shared_crt ON"
-)
-
-cpmaddpackage(
-  NAME
-    WOLFSOUND_DSP_UTILS
-  GITHUB_REPOSITORY
-    JanWilczek/wolfsound-dsp-utils
-  VERSION
-    0.4.0
-  SOURCE_DIR
-    ${LIB_DIR}/wolfsound-dsp-utils
-  OPTIONS
-    "BUILD_TESTS OFF"
+    "gtest_force_shared_crt OFF"
 )
 
 # Creates the test console application.
 add_executable(FernShyPandorasBoxPluginTest
   source/PluginProcessorTest.cpp
+  source/EffectChainTest.cpp
   source/JsonSerializerTest.cpp
-  source/TremoloTest.cpp
   source/detail/StridedQueueTest.cpp
   source/BypassTransitionSmootherTest.cpp
 )
@@ -56,7 +41,6 @@ target_link_libraries(
   PRIVATE
     fernshy::pandoras_box_plugin
     GTest::gtest_main
-    wolfsound::wolfsound_dsp_utils
     juce::juce_recommended_warning_flags
 )
 

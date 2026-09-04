@@ -31,7 +31,8 @@ public:
 
     for (int i = 0; i < numSamples; ++i) {
       for (int ch = 0; ch < numCh; ++ch)
-        circBuf[ch][writeIdx] = buffer.getSample(ch, i);
+        circBuf[ch][static_cast<size_t>(writeIdx)] =
+            buffer.getSample(ch, i);
 
       float wet[2] = {};
 
@@ -83,7 +84,8 @@ private:
     const auto frac = pos - std::floor(pos);
     p0 = ((p0 % bufSize) + bufSize) % bufSize;
     const auto p1 = (p0 + 1) % bufSize;
-    return buf[p0] * (1.0f - frac) + buf[p1] * frac;
+    return buf[static_cast<size_t>(p0)] * (1.0f - frac) +
+           buf[static_cast<size_t>(p1)] * frac;
   }
 
   std::vector<float> circBuf[2];
