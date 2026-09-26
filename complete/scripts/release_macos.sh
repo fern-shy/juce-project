@@ -83,7 +83,7 @@ done
 pkgbuild --analyze --root "$PACKAGE_ROOT" "$COMPONENTS_PLIST"
 index=0
 while /usr/libexec/PlistBuddy -c "Print :$index" "$COMPONENTS_PLIST" >/dev/null 2>&1; do
-  /usr/libexec/PlistBuddy -c "Set :$index:BundleIsRelocatable false" "$COMPONENTS_PLIST"
+  plutil -replace "$index.BundleIsRelocatable" -bool NO "$COMPONENTS_PLIST"
   index=$((index + 1))
 done
 
@@ -118,7 +118,7 @@ cp "$ROOT_DIR/assets/README.txt" "$OUTPUT_DIR/README.txt"
   shasum -a 256 "$(basename "$PKG")" > SHA256SUMS.txt
 )
 
-ditto -c -k --sequesterRsrc --keepParent \
+ditto -c -k --norsrc --noextattr --noqtn --keepParent \
   "$OUTPUT_DIR" "$DIST_DIR/$PRODUCT.zip"
 cp "$PKG" "$DIST_DIR/$PRODUCT.pkg"
 rm -rf "$WORK_DIR"
