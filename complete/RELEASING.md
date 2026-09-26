@@ -66,7 +66,11 @@ The script:
 4. submits the installer to Apple notarization and staples the result;
 5. verifies signatures, Gatekeeper assessment, architectures, and package
    signature;
-6. emits a versioned ZIP and SHA-256 checksum under `dist/`.
+6. emits a versioned `.pkg`, ZIP, and SHA-256 checksum under `dist/`.
+
+Without the three environment variables, the script builds an unsigned,
+un-notarized `-unsigned.pkg` for testing. Users must approve it in
+**System Settings > Privacy & Security**; see `DOWNLOAD_AND_INSTALL.md`.
 
 ## Manual release gate
 
@@ -100,7 +104,7 @@ changes. Tag published source with the same version, for example `v1.0.0`.
 
 ## GitHub Actions secrets
 
-The tagged/manual signing workflow expects:
+The signing workflow runs only for `v*` tags and expects:
 
 - `MACOS_APPLICATION_P12`
 - `MACOS_APPLICATION_P12_PASSWORD`
@@ -124,6 +128,7 @@ ephemeral CI keychain and are never written to source artifacts.
 - A trusted Windows code-signing certificate exported as a password-protected
   PFX file
 - `pluginval.exe` for local validation
+- [Inno Setup 6](https://jrsoftware.org/isdl.php) for the installer
 
 ## Windows build and test
 
@@ -158,9 +163,14 @@ The script builds, runs tests, validates the VST3 at pluginval strictness 10,
 signs and timestamps the native VST3 binary, verifies the signature, and emits
 a versioned ZIP plus a SHA-256 checksum under `dist\`.
 
-Omitting `-CertificatePath` creates a clearly named `-unsigned.zip` for
-internal testing only. Do not publish that archive. Keep PFX files and
-passwords outside the repository.
+It also builds `PandorasBox-<version>-Windows-x64-Setup.exe` with Inno Setup
+(`installer/windows/PandorasBox.iss`), which installs the VST3 into
+`C:\Program Files\Common Files\VST3` and registers an uninstaller. Pass
+`-SkipInstaller` to build only the ZIP.
+
+Omitting `-CertificatePath` creates clearly named `-unsigned` ZIP and
+installer files. Windows SmartScreen warns about them, and Smart App Control
+blocks them. Keep PFX files and passwords outside the repository.
 
 ## Windows manual release gate
 
@@ -174,7 +184,7 @@ passwords outside the repository.
 
 ## Windows GitHub Actions secrets
 
-The tagged/manual Windows signing job expects:
+The Windows signing job runs only for `v*` tags and expects:
 
 - `WINDOWS_CERTIFICATE_PFX`
 - `WINDOWS_CERTIFICATE_PASSWORD`
