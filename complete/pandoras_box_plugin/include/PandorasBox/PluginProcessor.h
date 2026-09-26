@@ -46,9 +46,12 @@ public:
   [[nodiscard]] float getOutputLevel() const noexcept;
 
 private:
+  void processChunk(juce::AudioBuffer<float>& chunk);
   void updateOutputLevel(const juce::AudioBuffer<float>& buffer) noexcept;
 
   Parameters parameters{*this};
+  int preparedBlockSize = 0;
+  int preparedNumChannels = 0;
   EffectChain effectChain;
   BypassTransitionSmoother bypassTransitionSmoother;
   std::atomic<double> currentSampleRate{0.};

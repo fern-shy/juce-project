@@ -14,7 +14,7 @@ if(APPLE)
 endif()
 
 # Sets a few variables, like PROJECT_NAME.
-project(FernShyPandorasBoxPlugin VERSION 1.0.1 LANGUAGES C CXX)
+project(FernShyPandorasBoxPlugin VERSION 1.0.2 LANGUAGES C CXX)
 
 # Set the C++ standard only if this project is standalone;
 # otherwise, let clients decide.

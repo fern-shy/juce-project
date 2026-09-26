@@ -21,9 +21,11 @@ juce::MemoryBlock makeState(int paramSeed, int orderSeed,
   return state;
 }
 
-std::vector<float> render(const juce::MemoryBlock& state, int blockSize) {
+std::vector<float> render(const juce::MemoryBlock& state, int blockSize,
+                          int preparedBlockSize = 0) {
   PluginProcessor processor;
-  processor.prepareToPlay(sampleRate, blockSize);
+  processor.prepareToPlay(sampleRate,
+                          preparedBlockSize > 0 ? preparedBlockSize : blockSize);
   processor.setStateInformation(state.getData(),
                                 static_cast<int>(state.getSize()));
 
@@ -98,6 +100,19 @@ TEST(PluginProcessor, RenderIsStableAcrossBlockSizes) {
 
   for (size_t i = 0; i < smallBlocks.size(); ++i)
     EXPECT_NEAR(smallBlocks[i], largeBlocks[i], 1.0e-4f);
+}
+
+// FL Studio may deliver blocks longer than the size announced in prepareToPlay.
+TEST(PluginProcessor, HandlesBlocksLargerThanPrepared) {
+  const auto state = makeState(1234567, 7654321);
+  const auto announced = render(state, 64);
+  const auto oversized = render(state, 1000, 64);
+  ASSERT_EQ(announced.size(), oversized.size());
+
+  for (size_t i = 0; i < announced.size(); ++i) {
+    ASSERT_TRUE(std::isfinite(oversized[i]));
+    EXPECT_NEAR(announced[i], oversized[i], 1.0e-4f);
+  }
 }
 
 TEST(PluginProcessor, RandomizedStateReportsNonZeroTailImmediately) {

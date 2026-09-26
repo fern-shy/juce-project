@@ -1,4 +1,4 @@
-Pandoras Box 1.0.1
+Pandoras Box 1.0.2
 FernShy
 
 Pandoras Box is available as a universal macOS audio effect for Apple Silicon
