@@ -125,13 +125,9 @@ jobs:
       - name: Download pluginval
         shell: pwsh
         run: |
-          $release = Invoke-RestMethod `
-            "https://api.github.com/repos/Tracktion/pluginval/releases/latest"
-          $asset = $release.assets |
-            Where-Object { $_.name -match '(?i)windows.*\.zip$|win.*\.zip$' } |
-            Select-Object -First 1
-          if (-not $asset) { throw "No Windows pluginval archive found" }
-          Invoke-WebRequest $asset.browser_download_url -OutFile pluginval.zip
+          Invoke-WebRequest `
+            "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip" `
+            -OutFile pluginval.zip
           Expand-Archive pluginval.zip -DestinationPath pluginval
           $exe = Get-ChildItem pluginval -Filter pluginval.exe -Recurse |
             Select-Object -First 1
@@ -167,13 +163,9 @@ jobs:
       - name: Download pluginval
         shell: pwsh
         run: |
-          $release = Invoke-RestMethod `
-            "https://api.github.com/repos/Tracktion/pluginval/releases/latest"
-          $asset = $release.assets |
-            Where-Object { $_.name -match '(?i)windows.*\.zip$|win.*\.zip$' } |
-            Select-Object -First 1
-          if (-not $asset) { throw "No Windows pluginval archive found" }
-          Invoke-WebRequest $asset.browser_download_url -OutFile pluginval.zip
+          Invoke-WebRequest `
+            "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip" `
+            -OutFile pluginval.zip
           Expand-Archive pluginval.zip -DestinationPath pluginval
           $exe = Get-ChildItem pluginval -Filter pluginval.exe -Recurse |
             Select-Object -First 1
