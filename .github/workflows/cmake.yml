@@ -66,7 +66,7 @@ jobs:
 
   sign-notarize:
     needs: build-test
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-14
 
     steps:
@@ -125,18 +125,17 @@ jobs:
       - name: Download pluginval
         shell: pwsh
         run: |
-          $release = Invoke-RestMethod `
-            "https://api.github.com/repos/Tracktion/pluginval/releases/latest"
-          $asset = $release.assets |
-            Where-Object { $_.name -match '(?i)windows.*\.zip$|win.*\.zip$' } |
-            Select-Object -First 1
-          if (-not $asset) { throw "No Windows pluginval archive found" }
-          Invoke-WebRequest $asset.browser_download_url -OutFile pluginval.zip
+          Invoke-WebRequest `
+            "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip" `
+            -OutFile pluginval.zip
           Expand-Archive pluginval.zip -DestinationPath pluginval
           $exe = Get-ChildItem pluginval -Filter pluginval.exe -Recurse |
             Select-Object -First 1
           if (-not $exe) { throw "pluginval.exe was not found in the archive" }
           "PLUGINVAL_PATH=$($exe.FullName)" >> $env:GITHUB_ENV
+
+      - name: Install Inno Setup
+        run: choco upgrade innosetup --no-progress -y
 
       - name: Build, test, validate, and package
         working-directory: complete
@@ -149,11 +148,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PandorasBox-Windows-x64-unsigned
-          path: complete/dist/*Windows-x64-unsigned.zip
+          path: |
+            complete/dist/*Windows-x64-unsigned.zip
+            complete/dist/*Windows-x64-unsigned-Setup.exe
 
   windows-sign:
     needs: windows-build-test
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-2022
 
     steps:
@@ -162,13 +163,9 @@ jobs:
       - name: Download pluginval
         shell: pwsh
         run: |
-          $release = Invoke-RestMethod `
-            "https://api.github.com/repos/Tracktion/pluginval/releases/latest"
-          $asset = $release.assets |
-            Where-Object { $_.name -match '(?i)windows.*\.zip$|win.*\.zip$' } |
-            Select-Object -First 1
-          if (-not $asset) { throw "No Windows pluginval archive found" }
-          Invoke-WebRequest $asset.browser_download_url -OutFile pluginval.zip
+          Invoke-WebRequest `
+            "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip" `
+            -OutFile pluginval.zip
           Expand-Archive pluginval.zip -DestinationPath pluginval
           $exe = Get-ChildItem pluginval -Filter pluginval.exe -Recurse |
             Select-Object -First 1
@@ -189,6 +186,9 @@ jobs:
             [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_PFX))
           "WINDOWS_CERTIFICATE_PATH=$path" >> $env:GITHUB_ENV
 
+      - name: Install Inno Setup
+        run: choco upgrade innosetup --no-progress -y
+
       - name: Build, validate, sign, and package
         working-directory: complete
         shell: pwsh
@@ -204,4 +204,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PandorasBox-Windows-x64-public-release
-          path: complete/dist/*Windows-x64.zip
+          path: |
+            complete/dist/*Windows-x64.zip
+            complete/dist/*Windows-x64-Setup.exe

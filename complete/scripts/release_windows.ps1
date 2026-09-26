@@ -2,7 +2,8 @@ param(
     [string]$CertificatePath = "",
     [string]$CertificatePassword = "",
     [string]$PluginvalPath = "",
-    [switch]$SkipPluginval
+    [switch]$SkipPluginval,
+    [switch]$SkipInstaller
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,6 +42,22 @@ if (-not $versionMatch.Success) {
 $Version = $versionMatch.Groups[1].Value
 
 $signed = $false
+$signtoolPath = $null
+
+function Invoke-Signing {
+    param([string]$Path)
+    Invoke-Checked {
+        & $signtoolPath sign `
+            /fd SHA256 `
+            /td SHA256 `
+            /tr "http://timestamp.digicert.com" `
+            /f $CertificatePath `
+            /p $CertificatePassword `
+            $Path
+    }
+    Invoke-Checked { & $signtoolPath verify /pa /v $Path }
+}
+
 if ($CertificatePath) {
     if (-not (Test-Path -LiteralPath $CertificatePath -PathType Leaf)) {
         throw "Code-signing certificate not found: $CertificatePath"
@@ -59,16 +76,7 @@ if ($CertificatePath) {
     }
     $signtoolPath = if ($signtool.Source) { $signtool.Source } else { $signtool.FullName }
 
-    Invoke-Checked {
-        & $signtoolPath sign `
-            /fd SHA256 `
-            /td SHA256 `
-            /tr "http://timestamp.digicert.com" `
-            /f $CertificatePath `
-            /p $CertificatePassword `
-            $Binary
-    }
-    Invoke-Checked { & $signtoolPath verify /pa /v $Binary }
+    Invoke-Signing $Binary
     $signed = $true
 }
 
@@ -94,9 +102,12 @@ $suffix = if ($signed) { "" } else { "-unsigned" }
 $Product = "PandorasBox-$Version-Windows-x64$suffix"
 $OutputDir = Join-Path $DistDir $Product
 $Zip = Join-Path $DistDir "$Product.zip"
+$SetupName = "$Product-Setup"
+$Setup = Join-Path $DistDir "$SetupName.exe"
 
 Remove-Item -LiteralPath $OutputDir -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $Zip -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $Setup -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
 Copy-Item -LiteralPath $Vst3 -Destination $OutputDir -Recurse
@@ -112,8 +123,40 @@ $hash = (Get-FileHash -LiteralPath $packagedBinary -Algorithm SHA256).Hash.ToLow
 
 Compress-Archive -LiteralPath $OutputDir -DestinationPath $Zip -CompressionLevel Optimal
 
+if (-not $SkipInstaller) {
+    $iscc = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty Source -First 1
+    if (-not $iscc) {
+        $iscc = @(
+            (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
+            (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe"),
+            (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe")
+        ) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
+            Select-Object -First 1
+    }
+    if (-not $iscc) {
+        throw "Inno Setup 6 (ISCC.exe) was not found. Install it from https://jrsoftware.org/isdl.php or pass -SkipInstaller."
+    }
+
+    Invoke-Checked {
+        & $iscc `
+            "/DAppVersion=$Version" `
+            "/DVst3Dir=$Vst3" `
+            "/DDocsDir=$OutputDir" `
+            "/DOutputDir=$DistDir" `
+            "/DOutputBaseFilename=$SetupName" `
+            (Join-Path $RootDir "installer\windows\PandorasBox.iss")
+    }
+    if ($signed) {
+        Invoke-Signing $Setup
+    }
+}
+
 Write-Host "Windows release ready:"
 Write-Host "  $Zip"
+if (-not $SkipInstaller) {
+    Write-Host "  $Setup"
+}
 if (-not $signed) {
     Write-Warning "This package is unsigned and is not the public release artifact."
 }

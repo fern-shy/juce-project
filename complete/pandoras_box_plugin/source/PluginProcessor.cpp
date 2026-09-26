@@ -53,6 +53,8 @@ void PluginProcessor::prepareToPlay(double sampleRate,
 
   const auto numChannels = static_cast<uint32_t>(
       juce::jmax(getTotalNumInputChannels(), getTotalNumOutputChannels()));
+  preparedBlockSize = juce::jmax(1, expectedMaxFramesPerBlock);
+  preparedNumChannels = static_cast<int>(numChannels);
 
   effectChain.prepare(sampleRate, expectedMaxFramesPerBlock,
                       static_cast<int>(numChannels));
@@ -94,13 +96,32 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     buffer.clear(channelToClear, 0, buffer.getNumSamples());
   }
 
+  const auto numChannels =
+      juce::jmin(buffer.getNumChannels(), preparedNumChannels);
+  if (preparedBlockSize <= 0 || numChannels <= 0) {
+    return;
+  }
+
+  // Internal buffers are sized in prepareToPlay(), but some hosts (notably
+  // FL Studio) deliver longer blocks than announced.
+  const auto numSamples = buffer.getNumSamples();
+  for (int start = 0; start < numSamples; start += preparedBlockSize) {
+    juce::AudioBuffer<float> chunk{
+        buffer.getArrayOfWritePointers(), numChannels, start,
+        juce::jmin(preparedBlockSize, numSamples - start)};
+    processChunk(chunk);
+  }
+
+  updateOutputLevel(buffer);
+}
+
+void PluginProcessor::processChunk(juce::AudioBuffer<float>& buffer) {
   const auto bypassedAndNotTransitioning =
       parameters.bypassed.get() && !bypassTransitionSmoother.isTransitioning();
 
   bypassTransitionSmoother.setBypass(parameters.bypassed);
 
   if (bypassedAndNotTransitioning) {
-    updateOutputLevel(buffer);
     return;
   }
 
@@ -117,8 +138,6 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                       parameters.wrath.get());
 
   bypassTransitionSmoother.mixToWetBuffer(buffer);
-
-  updateOutputLevel(buffer);
 }
 
 bool PluginProcessor::hasEditor() const {

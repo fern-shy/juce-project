@@ -1,43 +1,47 @@
-Pandoras Box 1.0.0
-FernShy
+Pandoras Box 1.0.2
+FernShy - https://fernshy.com
 
-Pandoras Box is available as a universal macOS audio effect for Apple Silicon
-and Intel and as a 64-bit Windows VST3.
+Pandoras Box is a chaos effect. Click its eyes to roll new hidden settings:
+left eye = new settings, right eye = new effect order, middle eye = both.
+Turn your speakers down before the first click.
 
 SYSTEM REQUIREMENTS
 
-macOS 11 or newer, or 64-bit Windows 10 or newer.
+Windows 10 or 11 (64-bit) with a 64-bit VST3 host, or
+macOS 11 or newer (Apple Silicon or Intel) with an AU or VST3 host.
 
-MACOS INSTALLATION
+INSTALLATION
 
-Use the signed Pandoras Box installer package when available.
+Windows: run the Pandoras Box Setup.exe installer. It installs to
+  C:\Program Files\Common Files\VST3\Pandoras Box.vst3
+  Without the installer, copy only the "Pandoras Box.vst3" folder from the
+  ZIP into C:\Program Files\Common Files\VST3\
 
-For manual installation:
+Mac: open the Pandoras Box .pkg installer. It installs the AU and VST3 into
+  /Library/Audio/Plug-Ins/
 
-AU:
-  Copy "Pandoras Box.component" to:
-  ~/Library/Audio/Plug-Ins/Components/
+If Windows shows "Windows protected your PC", click More info > Run anyway.
+If macOS refuses to open the installer, click Done, then open
+System Settings > Privacy & Security and click Open Anyway.
 
-VST3:
-  Copy "Pandoras Box.vst3" to:
-  ~/Library/Audio/Plug-Ins/VST3/
+FIRST USE
 
-Restart your DAW and perform a full plugin rescan. Existing track instances may
-retain cached metadata; remove and reinsert them if the host shows stale
-parameters.
+Restart your DAW and rescan plugins.
+FL Studio: Options > Manage plugins > Find installed plugins (tick Verify
+  plugins), star Pandoras Box, then add it to a Mixer effect slot.
+Ableton Live: Preferences > Plug-Ins > turn on VST3 system folders
+  (and Audio Units on Mac) > Rescan.
+Logic Pro: Audio FX slot > Audio Units > FernShy > Pandoras Box.
 
-WINDOWS INSTALLATION
-
-Extract the ZIP, then copy "Pandoras Box.vst3" to:
-  C:\Program Files\Common Files\VST3\
-
-Administrator permission is normally required. Restart your DAW and perform a
-full plugin rescan. Use the 64-bit version of the DAW.
+The eight intensity controls (Time, Breath, Order, Chaos, Space, Reflection,
+Fracture, Wrath) are in your DAW's parameter list. Your project saves the
+exact roll, and exports sound the same as playback.
 
 UNINSTALLATION
 
-Delete the corresponding plugin from the installation folder, then restart the
-DAW.
+Windows: Settings > Apps > Installed apps > Pandoras Box (VST3) > Uninstall.
+Mac: delete "Pandoras Box.component" from /Library/Audio/Plug-Ins/Components
+  and "Pandoras Box.vst3" from /Library/Audio/Plug-Ins/VST3.
 
 LICENSES
 
